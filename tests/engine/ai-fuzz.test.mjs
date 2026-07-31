@@ -86,12 +86,16 @@ describe('fuzz: pełna misja (gracz + fale tatarskie) przez limit tur', () => {
 
         state = endTurn(state);
         assertValidState(state);
+        if (state.status !== 'playing') break; // gra może zakończyć się wcześniej (zwycięstwo/porażka)
       }
 
-      assert.equal(state.turn, MAX_TURNS + 1);
-      // Do końca limitu tur powinny zdążyć się pojawić wszystkie 3 fale (spawnTurn
-      // ostatniej to 27, znacznie przed MAX_TURNS=40).
-      assert.equal(state.waves.length, 3);
+      assert.ok(['playing', 'victory', 'defeat'].includes(state.status));
+      assert.ok(state.turn <= MAX_TURNS + 1);
+      // Jeśli gra dotrwała do końca limitu tur, wszystkie 3 fale zdążyły się pojawić
+      // (spawnTurn ostatniej to 27, znacznie przed MAX_TURNS=40).
+      if (state.turn > MAX_TURNS) {
+        assert.equal(state.waves.length, 3);
+      }
     });
   }
 });

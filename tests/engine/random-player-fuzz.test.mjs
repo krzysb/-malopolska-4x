@@ -80,9 +80,11 @@ describe('fuzz: losowy gracz przez wiele tur', () => {
 
         state = endTurn(state);
         assertValidState(state);
+        if (state.status !== 'playing') break; // gra może zakończyć się wcześniej (zwycięstwo/porażka)
       }
 
-      assert.equal(state.turn, TURNS_PER_GAME + 1);
+      assert.ok(['playing', 'victory', 'defeat'].includes(state.status));
+      assert.ok(state.turn <= TURNS_PER_GAME + 1);
     });
   }
 });
