@@ -37,6 +37,7 @@ export function createInitialState({ seed = 1, cities = CITIES } = {}) {
       owner: c.owner,
       capital: Boolean(c.capital),
       level: 1,
+      growth: 0,
       buildings: { walls: 0, barracks: 0, market: 0, granary: 0, church: 0 },
       garrison: defaultGarrisonFor(c),
     };
