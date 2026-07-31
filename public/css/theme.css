@@ -1,0 +1,116 @@
+/* Paleta historyczno-militarna (pergamin/brąz/złoto/czerwień zagrożenia).
+   Pełny szlif wizualny to osobny etap (polish) - to jest baza pod dalszą pracę. */
+:root {
+  --color-bg: #efe4c8;
+  --color-bg-panel: #f7efd9;
+  --color-text: #3a2c1a;
+  --color-accent: #8a6a1f;
+  --color-danger: #7a1f1f;
+  --color-border: #c9b183;
+
+  --terrain-plains: #d9c98f;
+  --terrain-forest: #4c6b3f;
+  --terrain-hills: #a68a5c;
+  --terrain-river: #4a7fa5;
+  --terrain-impassable: #5b5245;
+
+  --owner-player: #1f5aa8;
+  --owner-neutral: #7a7566;
+  --owner-tatar: #7a1f1f;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #1c1712;
+    --color-bg-panel: #2a2118;
+    --color-text: #ece0c4;
+    --color-accent: #d1a94a;
+    --color-danger: #c94a4a;
+    --color-border: #4a3d29;
+
+    --terrain-plains: #7a6a3f;
+    --terrain-forest: #2e4527;
+    --terrain-hills: #6e5a3a;
+    --terrain-river: #2c5878;
+    --terrain-impassable: #2b271f;
+
+    --owner-player: #4d8fd6;
+    --owner-neutral: #9a9382;
+    --owner-tatar: #c94a4a;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+#hud {
+  padding: 0.75rem 1rem;
+  background: var(--color-bg-panel);
+  border-bottom: 2px solid var(--color-border);
+}
+
+#hud h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.1rem;
+}
+
+#hud-stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.95rem;
+  color: var(--color-accent);
+}
+
+.hex-cell {
+  stroke: var(--color-border);
+  stroke-width: 0.5;
+}
+.hex-cell.terrain-plains { fill: var(--terrain-plains); }
+.hex-cell.terrain-forest { fill: var(--terrain-forest); }
+.hex-cell.terrain-hills { fill: var(--terrain-hills); }
+.hex-cell.terrain-river { fill: var(--terrain-river); }
+.hex-cell.terrain-impassable { fill: var(--terrain-impassable); }
+
+.hex-highlight {
+  fill: rgba(255, 220, 120, 0.35);
+  stroke: var(--color-accent);
+  stroke-width: 1;
+  pointer-events: none;
+}
+
+.city-marker circle {
+  stroke: var(--color-text);
+  stroke-width: 0.6;
+}
+.city-marker.owner-player circle { fill: var(--owner-player); }
+.city-marker.owner-neutral circle { fill: var(--owner-neutral); }
+.city-marker.owner-tatar circle { fill: var(--owner-tatar); }
+.city-marker.capital circle { stroke: var(--color-accent); stroke-width: 1.4; }
+.city-marker .city-label {
+  font-size: 3.6px;
+  text-anchor: middle;
+  transform: translateY(-7px);
+  fill: var(--color-text);
+  paint-order: stroke;
+  stroke: var(--color-bg);
+  stroke-width: 2px;
+}
+
+.army-marker polygon {
+  stroke: var(--color-text);
+  stroke-width: 0.5;
+}
+.army-marker.owner-player polygon { fill: var(--owner-player); }
+.army-marker.owner-tatar polygon { fill: var(--owner-tatar); }
+.army-marker .army-count {
+  font-size: 3.4px;
+  text-anchor: middle;
+  transform: translateY(1.2px);
+  fill: #fff;
+}
