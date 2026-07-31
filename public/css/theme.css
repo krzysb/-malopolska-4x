@@ -188,3 +188,13 @@ button:not(:disabled):hover {
 #event-log-list li:last-child {
   border-bottom: none;
 }
+
+#end-screen {
+  background: rgba(20, 15, 8, 0.75);
+}
+.end-screen-box {
+  background: var(--color-bg-panel);
+  border: 2px solid var(--color-accent);
+  border-radius: 0.5rem;
+  color: var(--color-text);
+}

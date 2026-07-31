@@ -16,6 +16,34 @@ html, body {
   margin-left: auto;
 }
 
+#end-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+#end-screen[hidden] {
+  display: none;
+}
+
+.end-screen-box {
+  max-width: 28rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.end-screen-box h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.6rem;
+}
+
+.end-screen-box p {
+  margin: 0 0 1.25rem;
+}
+
 #board-wrap {
   flex: 1;
   min-height: 0;
