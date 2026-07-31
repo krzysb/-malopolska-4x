@@ -24,10 +24,13 @@ export function armyMovementPoints(units) {
   return Math.min(...units.map(({ type }) => UNIT_TYPES[type].movement));
 }
 
-function recruitCost(city, unitDef) {
+// Koszt rekrutacji z uwzględnieniem zniżki z koszar. Eksportowana, żeby UI (np.
+// cityPanel.js) mogło pokazać dokładny koszt i wyszarzyć przycisk bez duplikowania
+// tej formuły.
+export function recruitCost(city, unitTypeId) {
   const barracksLevel = city.buildings.barracks || 0;
   const discount = Math.min(1, barracksLevel * BUILDINGS.barracks.recruitDiscountPerLevel);
-  return Math.round(unitDef.cost * (1 - discount));
+  return Math.round(UNIT_TYPES[unitTypeId].cost * (1 - discount));
 }
 
 // Rekrutuje jednostkę w mieście: dodaje do garnizonu albo do armii stojącej na
@@ -36,7 +39,7 @@ function recruitCost(city, unitDef) {
 export function recruitUnit(state, cityId, unitTypeId, destination = 'garrison') {
   const city = state.cities[cityId];
   const unitDef = UNIT_TYPES[unitTypeId];
-  const cost = recruitCost(city, unitDef);
+  const cost = recruitCost(city, unitTypeId);
   if (state.player.gold < cost) return state;
 
   const nextState = { ...state, player: { ...state.player, gold: state.player.gold - cost } };
