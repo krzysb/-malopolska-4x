@@ -23,6 +23,7 @@ function spawnWave(state, wave) {
       [armyId]: { id: armyId, owner: 'tatar', q: spawnHex.q, r: spawnHex.r, units, movementLeft: armyMovementPoints(units) },
     },
     waves: [...state.waves, { id: wave.id, year: wave.year, spawnedTurn: state.turn, withdrawn: false }],
+    log: [...state.log, { turn: state.turn, type: 'wave-spawn', waveId: wave.id }],
   };
 }
 

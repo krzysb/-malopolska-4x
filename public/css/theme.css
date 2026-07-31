@@ -173,3 +173,18 @@ button:not(:disabled):hover {
 
 #hud-status.hud-status-victory { color: var(--owner-player); font-weight: bold; }
 #hud-status.hud-status-defeat { color: var(--color-danger); font-weight: bold; }
+
+#event-log {
+  background: var(--color-bg-panel);
+  border-top: 2px solid var(--color-border);
+  color: var(--color-text);
+}
+#event-log h2 {
+  color: var(--color-accent);
+}
+#event-log-list li {
+  border-bottom: 1px dotted var(--color-border);
+}
+#event-log-list li:last-child {
+  border-bottom: none;
+}

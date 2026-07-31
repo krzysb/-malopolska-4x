@@ -15,6 +15,7 @@ import { createHexRenderer } from './render/hexRenderer.js';
 import { createHud } from './render/hud.js';
 import { createCityPanel } from './render/cityPanel.js';
 import { createArmyPanel } from './render/armyPanel.js';
+import { createEventLog } from './render/eventLog.js';
 
 const svg = document.getElementById('hex-map');
 const sidePanel = document.getElementById('side-panel');
@@ -27,6 +28,7 @@ const hud = createHud({
 });
 const cityPanel = createCityPanel(sidePanel, { onBuild, onRecruit, onClose: closePanels });
 const armyPanel = createArmyPanel(sidePanel, { onCancel: closePanels });
+const eventLog = createEventLog(document.getElementById('event-log-list'));
 
 let state = loadGame() ?? createInitialState();
 let selectedArmyId = null;
@@ -39,6 +41,7 @@ render();
 function render() {
   renderer.render(state);
   hud.render(state);
+  eventLog.render(state);
   endTurnBtn.disabled = state.status !== 'playing';
 
   if (selectedArmyId && state.armies[selectedArmyId]) {
