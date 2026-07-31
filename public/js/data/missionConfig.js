@@ -4,7 +4,7 @@
 export const TATAR_WAVES = [
   { id: 1, year: 1241, spawnTurn: 3, units: [{ type: 'tatar-raiders', count: 6 }, { type: 'tatar-horsearchers', count: 3 }] },
   { id: 2, year: 1259, spawnTurn: 15, units: [{ type: 'tatar-raiders', count: 8 }, { type: 'tatar-horsearchers', count: 5 }] },
-  { id: 3, year: 1287, spawnTurn: 27, units: [{ type: 'tatar-elite', count: 4 }, { type: 'tatar-horsearchers', count: 6 }, { type: 'tatar-raiders', count: 6 }] },
+  { id: 3, year: 1287, spawnTurn: 27, units: [{ type: 'tatar-elite', count: 3 }, { type: 'tatar-horsearchers', count: 5 }, { type: 'tatar-raiders', count: 5 }] },
 ];
 
 // Odstępy między falami (12 tur) są celowo większe niż czas do wycofania
@@ -13,5 +13,5 @@ export const TATAR_WAVES = [
 // fali należy dana, ewentualnie połączona, armia tatarska).
 export const WAVE_WITHDRAW_AFTER_TURNS = 8;
 
-export const VICTORY_CITY_THRESHOLD = 5; // z 7 miast, wymagane po 3. fali
+export const VICTORY_CITY_THRESHOLD = 4; // z 7 miast, wymagane po 3. fali
 export const MAX_TURNS = 40;

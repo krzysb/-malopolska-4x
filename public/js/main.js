@@ -17,6 +17,7 @@ import { createCityPanel } from './render/cityPanel.js';
 import { createArmyPanel } from './render/armyPanel.js';
 import { createEventLog } from './render/eventLog.js';
 import { createEndScreen } from './render/endScreen.js';
+import { createBriefing } from './render/briefing.js';
 
 const svg = document.getElementById('hex-map');
 const sidePanel = document.getElementById('side-panel');
@@ -32,6 +33,7 @@ const cityPanel = createCityPanel(sidePanel, { onBuild, onRecruit, onClose: clos
 const armyPanel = createArmyPanel(sidePanel, { onCancel: closePanels });
 const eventLog = createEventLog(document.getElementById('event-log-list'));
 const endScreen = createEndScreen(document.getElementById('end-screen'), { onNewGame: startNewGame });
+const briefing = createBriefing(document.getElementById('briefing'), { onStart: () => {} });
 
 let state = loadGame() ?? createInitialState();
 let selectedArmyId = null;
@@ -40,6 +42,13 @@ let selectedCityId = null;
 const renderer = createHexRenderer(svg, { onHexClick: handleHexClick });
 renderer.buildBoard(state);
 render();
+// Odprawa pokazuje się tylko przy zupełnie świeżej rozgrywce (tura 1, zero
+// wpisów w kronice - żaden najazd jeszcze nie wystartował).
+if (state.turn === 1 && state.log.length === 0) {
+  briefing.render();
+} else {
+  briefing.hide();
+}
 
 function render() {
   renderer.render(state);
@@ -157,6 +166,7 @@ function startNewGame() {
   closePanels();
   renderer.buildBoard(state);
   render();
+  briefing.render();
 }
 
 endTurnBtn.addEventListener('click', () => {

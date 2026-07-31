@@ -189,7 +189,7 @@ button:not(:disabled):hover {
   border-bottom: none;
 }
 
-#end-screen {
+#end-screen, #briefing {
   background: rgba(20, 15, 8, 0.75);
 }
 .end-screen-box {

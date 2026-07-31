@@ -65,6 +65,8 @@ export function resolveBattle(state, attackerArmyId, target, mapHexes) {
   if (isCityAssault) {
     const wallsLevel = defenderCity.buildings.walls || 0;
     defenderStrength *= 1 + wallsLevel * BUILDINGS.walls.defenseBonusPerLevel;
+    const churchLevel = defenderCity.buildings.church || 0;
+    defenderStrength *= 1 + churchLevel * BUILDINGS.church.moraleBonus;
   }
 
   const totalStrength = attackerStrength + defenderStrength;

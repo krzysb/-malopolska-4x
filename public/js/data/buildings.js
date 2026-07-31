@@ -33,5 +33,5 @@ export const BUILDING_IDS = Object.keys(BUILDINGS);
 
 // Punkty rozwoju potrzebne do osiągnięcia danego poziomu miasta (indeks = poziom-1).
 export const CITY_GROWTH_THRESHOLDS = [0, 50, 150];
-export const BASE_GOLD_PER_TURN = 5;
+export const BASE_GOLD_PER_TURN = 8;
 export const BASE_GROWTH_PER_TURN = 5;

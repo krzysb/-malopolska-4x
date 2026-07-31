@@ -74,8 +74,29 @@ async function openPage(viewport) {
   return { page, consoleErrors };
 }
 
+async function dismissBriefing(page) {
+  await page.click('.briefing-box button');
+  await page.waitForTimeout(100);
+}
+
+test('desktop: odprawa misji pokazuje się na starcie świeżej gry i da się ją zamknąć', async () => {
+  const { page, consoleErrors } = await openPage({ width: 1280, height: 800 });
+
+  const visibleBefore = await page.locator('#briefing').isHidden();
+  assert.equal(visibleBefore, false, 'odprawa powinna być widoczna na starcie nowej gry');
+
+  await page.screenshot({ path: path.join(projectRoot, 'tests', 'screenshots', 'desktop-briefing.png') });
+  await dismissBriefing(page);
+  const visibleAfter = await page.locator('#briefing').isHidden();
+  assert.equal(visibleAfter, true, 'odprawa powinna zniknąć po kliknięciu Rozpocznij');
+
+  assert.deepEqual(consoleErrors, []);
+  await page.close();
+});
+
 test('desktop: mapa się ładuje bez błędów konsoli, widać HUD i 7 miast', async () => {
   const { page, consoleErrors } = await openPage({ width: 1280, height: 800 });
+  await dismissBriefing(page);
 
   const hexCells = await page.locator('.hex-cell').count();
   assert.equal(hexCells, 84, 'mapa 12x7 powinna mieć 84 heksy');
@@ -90,6 +111,7 @@ test('desktop: mapa się ładuje bez błędów konsoli, widać HUD i 7 miast', a
 
 test('mobile: mapa się ładuje bez błędów konsoli, layout jest pionowy (bottom-sheet)', async () => {
   const { page, consoleErrors } = await openPage({ width: 390, height: 844 });
+  await dismissBriefing(page);
 
   const flexDirection = await page.locator('#board-wrap').evaluate((el) => getComputedStyle(el).flexDirection);
   assert.equal(flexDirection, 'column', 'na wąskim ekranie panel powinien być pod mapą, nie obok');
@@ -101,6 +123,7 @@ test('mobile: mapa się ładuje bez błędów konsoli, layout jest pionowy (bott
 
 test('desktop: kliknięcie miasta gracza otwiera panel z budynkami i rekrutacją', async () => {
   const { page, consoleErrors } = await openPage({ width: 1280, height: 800 });
+  await dismissBriefing(page);
 
   const krakowLabel = page.locator('text=Kraków').first();
   const box = await krakowLabel.boundingBox();
@@ -118,6 +141,7 @@ test('desktop: kliknięcie miasta gracza otwiera panel z budynkami i rekrutacją
 
 test('koniec tury zwiększa licznik tur i nie zostawia błędów w konsoli', async () => {
   const { page, consoleErrors } = await openPage({ width: 1280, height: 800 });
+  await dismissBriefing(page);
 
   const turnBefore = await page.locator('#hud-turn').textContent();
   await page.click('#end-turn-btn');

@@ -19,7 +19,7 @@ html, body {
   margin-left: auto;
 }
 
-#end-screen {
+#end-screen, #briefing {
   position: fixed;
   inset: 0;
   display: flex;
@@ -28,7 +28,7 @@ html, body {
   padding: 1rem;
 }
 
-#end-screen[hidden] {
+#end-screen[hidden], #briefing[hidden] {
   display: none;
 }
 
@@ -45,6 +45,15 @@ html, body {
 
 .end-screen-box p {
   margin: 0 0 1.25rem;
+}
+
+.briefing-box {
+  max-width: 34rem;
+  text-align: left;
+}
+
+.briefing-box h2 {
+  text-align: center;
 }
 
 #board-wrap {

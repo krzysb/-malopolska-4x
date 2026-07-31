@@ -78,4 +78,21 @@ describe('combat', () => {
     assert.equal(MIN_CASUALTY_RATE, 0.05);
     assert.equal(MAX_CASUALTY_RATE, 0.9);
   });
+
+  test('kościół w mieście podnosi obronę garnizonu (moraleBonus), nie tylko mury', () => {
+    const state = createInitialState();
+    const city = { ...state.cities.wislica, garrison: [{ type: 'infantry', count: 30 }] };
+    const withoutChurch = withArmy({ ...state, cities: { ...state.cities, wislica: city } }, 'atk1', 'player', city, [{ type: 'cavalry', count: 20 }]);
+    const withChurch = withArmy(
+      { ...state, cities: { ...state.cities, wislica: { ...city, buildings: { ...city.buildings, church: 1 } } } },
+      'atk1', 'player', city, [{ type: 'cavalry', count: 20 }],
+    );
+
+    const resultWithout = resolveBattle(withoutChurch, 'atk1', { type: 'city', id: 'wislica' }, state.map.hexes);
+    const resultWith = resolveBattle(withChurch, 'atk1', { type: 'city', id: 'wislica' }, state.map.hexes);
+
+    const survivorsWithout = totalUnitCount(resultWithout.cities.wislica.garrison);
+    const survivorsWith = totalUnitCount(resultWith.cities.wislica.garrison);
+    assert.ok(survivorsWith > survivorsWithout, 'kościół powinien ograniczyć straty obrońcy w tej samej walce');
+  });
 });

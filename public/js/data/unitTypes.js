@@ -20,11 +20,11 @@ export const UNIT_TYPES = {
   },
   'tatar-raiders': {
     id: 'tatar-raiders', name: 'Czambuł tatarski', side: 'tatar',
-    attack: 6, defense: 3, movement: 4,
+    attack: 6, defense: 3, movement: 3,
   },
   'tatar-horsearchers': {
     id: 'tatar-horsearchers', name: 'Łucznicy konni', side: 'tatar',
-    attack: 5, defense: 4, movement: 4,
+    attack: 5, defense: 4, movement: 3,
     terrainAttackMod: { forest: 1.1 },
   },
   'tatar-elite': {
