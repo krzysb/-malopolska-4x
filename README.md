@@ -20,8 +20,15 @@ npm start
 ## Testy
 
 ```bash
-npm test
+npm test          # silnik gry (node --test, szybkie testy jednostkowe/fuzz)
+npm run test:e2e  # smoke-test w przeglądarce (Playwright, desktop+mobile)
 ```
+
+## Status
+
+Misja 1 jest kompletna i grywalna od odprawy po ekran końcowy: mapa,
+ekonomia miast, rekrutacja i ruch wojsk, walka, trzy fale najazdu tatarskiego,
+warunki zwycięstwa/porażki, zapis w localStorage, responsywny UI.
 
 ## Dokumentacja
 
