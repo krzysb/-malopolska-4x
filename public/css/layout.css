@@ -9,7 +9,10 @@ html, body {
 }
 
 #hud-stats {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  row-gap: 0.4rem;
 }
 
 #end-turn-btn {
@@ -112,13 +115,40 @@ html, body {
 /* Panel jako "bottom sheet" na wąskich ekranach zamiast bocznej kolumny. */
 @media (max-width: 720px) {
   #board-wrap {
+    /* flex:0 zamiast 1 - mapa ma teraz stałą wysokość z aspect-ratio, więc
+       board-wrap nie powinien być rozciągany na całą resztę ekranu (zostawiałoby
+       to pusty obszar między mapą/panelem a kroniką na dole). */
+    flex: 0 0 auto;
     flex-direction: column;
+    padding: 0.3rem;
+    gap: 0.3rem;
+  }
+  #hex-map {
+    /* Mapa ma stałe proporcje (12x7 heksów) - na wąskim ekranie lepiej dopasować
+       wysokość pudełka SVG do tych proporcji (przez height:auto + aspect-ratio)
+       niż rozciągać je (height:100% z reguły bazowej) na całą dostępną wysokość
+       flex, co zostawiałoby puste pola nad/pod mapą (letterboxing SVG). */
+    flex: 0 0 auto;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 12 / 7;
+    max-height: 55vh;
   }
   #side-panel {
     width: auto;
     max-height: 40vh;
+    border-radius: 0.6rem 0.6rem 0 0;
   }
   #event-log {
-    max-height: 20vh;
+    max-height: 16vh;
+  }
+
+  /* Większe cele dotykowe na wąskich ekranach. */
+  button {
+    min-height: 2.6rem;
+    padding: 0.5rem 0.8rem;
+  }
+  .panel-row {
+    padding: 0.4rem 0;
   }
 }
