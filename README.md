@@ -9,6 +9,13 @@ podobnie jak siostrzany projekt Portal Gierek). Docelowo część większej,
 wieloerowej kampanii — na razie w pełni zbudowana i dopracowana jest
 wyłącznie Misja 1.
 
+## Graj online
+
+**https://krzysb.github.io/-malopolska-4x/** — automatycznie wdrażane przez
+GitHub Actions po każdym pushu na `main` (patrz `.github/workflows/deploy-pages.yml`).
+Gra jest w 100% statyczna (bez backendu), więc nie wymaga instalowania
+niczego, żeby ją sprawdzić.
+
 ## Uruchomienie lokalne
 
 ```bash
