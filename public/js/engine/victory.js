@@ -1,5 +1,5 @@
-// Warunki zwycięstwa i porażki Misji 1, sprawdzane raz na turę z turn.js.
-import { VICTORY_CITY_THRESHOLD, MAX_TURNS } from '../data/missionConfig.js';
+// Warunki zwycięstwa i porażki Misji 1, sprawdzane co tick symulacji.
+import { VICTORY_CITY_THRESHOLD, MAX_TIME_SEC } from '../data/missionConfig.js';
 
 // Fala 3. jest "zakończona", gdy się już pojawiła i żadna armia tatarska nie
 // pozostaje aktywnie na mapie (pokonana w walce albo wycofana przez ai.js).
@@ -25,7 +25,7 @@ export function checkVictoryConditions(state) {
     return { ...state, status: 'victory' };
   }
 
-  if (state.turn > MAX_TURNS) {
+  if (state.time >= MAX_TIME_SEC) {
     return { ...state, status: 'defeat' };
   }
 

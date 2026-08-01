@@ -1,23 +1,24 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { createInitialState } from '../../public/js/engine/state.js';
-import { recruitUnit, moveArmyAlongPath } from '../../public/js/engine/units.js';
+import { recruitUnit, setArmyPath } from '../../public/js/engine/units.js';
 import { findPath } from '../../public/js/engine/pathfinding.js';
-import { resolveBattle } from '../../public/js/engine/combat.js';
-import { endTurn } from '../../public/js/engine/turn.js';
+import { tick } from '../../public/js/engine/simulation.js';
 import { createRngSequence } from '../../public/js/engine/rng.js';
 import { neighborsOf, key } from '../../public/js/engine/hexgrid.js';
-import { MAX_TURNS } from '../../public/js/data/missionConfig.js';
+import { MAX_TIME_SEC } from '../../public/js/data/missionConfig.js';
 
-// Pełna symulacja rozgrywki (gracz + AI tatarska) przez cały limit tur misji -
+// Pełna symulacja rozgrywki (gracz + AI tatarska) przez cały limit czasu misji -
 // silnik musi przejść przez to bez wyjątków, z niezmiennikami stanu zachowanymi
 // przez cały czas, niezależnie od tego, jak "głupio" gra losowy gracz.
 const UNIT_CHOICES = ['infantry', 'archers', 'cavalry'];
+const DT = 1; // sekunda symulacji na iterację
+const ITERATIONS = MAX_TIME_SEC + 5;
 const GAMES = 5;
 
 function assertValidState(state) {
   assert.ok(state.player.gold >= 0, 'złoto nie może być ujemne');
-  assert.ok(Number.isInteger(state.turn));
+  assert.ok(typeof state.time === 'number' && state.time >= 0);
   for (const city of Object.values(state.cities)) {
     assert.ok(['player', 'neutral', 'tatar'].includes(city.owner), `nieznany właściciel miasta ${city.id}: ${city.owner}`);
     for (const u of city.garrison) {
@@ -25,28 +26,28 @@ function assertValidState(state) {
     }
   }
   for (const army of Object.values(state.armies)) {
-    assert.ok(army.movementLeft >= 0, `armia ${army.id} ma ujemne punkty ruchu`);
+    assert.ok(army.progress >= 0, `armia ${army.id} ma ujemny progress`);
     assert.ok(army.units.length > 0, `armia ${army.id} istnieje bez jednostek`);
     for (const u of army.units) {
       assert.ok(Number.isInteger(u.count) && u.count > 0, `armia ${army.id} ma niepoprawną liczność ${u.type}`);
     }
   }
   for (const wave of state.waves) {
-    assert.ok(Number.isInteger(wave.spawnedTurn));
+    assert.ok(typeof wave.spawnedTime === 'number');
     assert.equal(typeof wave.withdrawn, 'boolean');
   }
 }
 
-describe('fuzz: pełna misja (gracz + fale tatarskie) przez limit tur', () => {
+describe('fuzz: pełna misja (gracz + fale tatarskie) przez limit czasu', () => {
   for (let game = 1; game <= GAMES; game++) {
-    test(`gra #${game}: silnik nie rzuca wyjątków przez ${MAX_TURNS} tur, stan pozostaje spójny`, () => {
+    test(`gra #${game}: silnik nie rzuca wyjątków przez ${MAX_TIME_SEC}s, stan pozostaje spójny`, () => {
       let state = createInitialState({ seed: game * 53 + 11 });
       const seq = createRngSequence(game * 617 + 5);
 
-      for (let t = 0; t < MAX_TURNS; t++) {
+      for (let i = 0; i < ITERATIONS; i++) {
         const playerCityIds = Object.keys(state.cities).filter((id) => state.cities[id].owner === 'player');
 
-        if (playerCityIds.length > 0 && seq.next() < 0.6) {
+        if (playerCityIds.length > 0 && seq.next() < 0.1) {
           const cityId = playerCityIds[Math.floor(seq.next() * playerCityIds.length)];
           const unitType = UNIT_CHOICES[Math.floor(seq.next() * UNIT_CHOICES.length)];
           const destination = seq.next() < 0.5 ? 'garrison' : 'army';
@@ -57,7 +58,7 @@ describe('fuzz: pełna misja (gracz + fale tatarskie) przez limit tur', () => {
         const playerArmyIds = Object.entries(state.armies)
           .filter(([, a]) => a.owner === 'player')
           .map(([id]) => id);
-        if (playerArmyIds.length > 0 && seq.next() < 0.7) {
+        if (playerArmyIds.length > 0 && seq.next() < 0.15) {
           const armyId = playerArmyIds[Math.floor(seq.next() * playerArmyIds.length)];
           const army = state.armies[armyId];
           const candidates = neighborsOf(army.q, army.r).filter((n) => state.map.hexes[key(n.q, n.r)]);
@@ -65,35 +66,22 @@ describe('fuzz: pełna misja (gracz + fale tatarskie) przez limit tur', () => {
             const target = candidates[Math.floor(seq.next() * candidates.length)];
             const path = findPath(state.map.hexes, { q: army.q, r: army.r }, target);
             if (path && path.length > 0) {
-              state = moveArmyAlongPath(state, armyId, path, state.map.hexes);
+              state = setArmyPath(state, armyId, path);
               assertValidState(state);
             }
           }
         }
 
-        const attackerIds = Object.entries(state.armies)
-          .filter(([, a]) => a.owner === 'player')
-          .map(([id]) => id);
-        if (attackerIds.length > 0 && seq.next() < 0.4) {
-          const armyId = attackerIds[Math.floor(seq.next() * attackerIds.length)];
-          const army = state.armies[armyId];
-          const cityHere = Object.values(state.cities).find((c) => c.q === army.q && c.r === army.r && c.owner !== 'player');
-          if (cityHere) {
-            state = resolveBattle(state, armyId, { type: 'city', id: cityHere.id }, state.map.hexes);
-            assertValidState(state);
-          }
-        }
-
-        state = endTurn(state);
+        state = tick(state, DT);
         assertValidState(state);
         if (state.status !== 'playing') break; // gra może zakończyć się wcześniej (zwycięstwo/porażka)
       }
 
       assert.ok(['playing', 'victory', 'defeat'].includes(state.status));
-      assert.ok(state.turn <= MAX_TURNS + 1);
-      // Jeśli gra dotrwała do końca limitu tur, wszystkie 3 fale zdążyły się pojawić
-      // (spawnTurn ostatniej to 27, znacznie przed MAX_TURNS=40).
-      if (state.turn > MAX_TURNS) {
+      assert.ok(state.time <= ITERATIONS * DT + 1);
+      // Jeśli gra dotrwała do końca limitu czasu, wszystkie 3 fale zdążyły się pojawić
+      // (spawnTimeSec ostatniej to 216, znacznie przed MAX_TIME_SEC=320).
+      if (state.time >= MAX_TIME_SEC) {
         assert.equal(state.waves.length, 3);
       }
     });

@@ -1,6 +1,7 @@
 // Odprawa na start misji: krótkie tło fabularne, cel i podstawowe sterowanie.
-// Pokazywana raz na starcie świeżej rozgrywki (tura 1), dismiss przez przycisk.
-import { VICTORY_CITY_THRESHOLD, MAX_TURNS } from '../data/missionConfig.js';
+// Pokazywana raz na starcie świeżej rozgrywki (czas 0), dismiss przez przycisk.
+import { VICTORY_CITY_THRESHOLD, MAX_TIME_SEC } from '../data/missionConfig.js';
+import { formatTime } from './hud.js';
 
 export function createBriefing(container, { onStart }) {
   function render() {
@@ -26,8 +27,15 @@ export function createBriefing(container, { onStart }) {
     goal.innerHTML =
       `<strong>Cel:</strong> po trzeciej fali najazdu utrzymaj co najmniej ` +
       `${VICTORY_CITY_THRESHOLD} z 7 grodów. Nie trać Krakowa - jego upadek ` +
-      `oznacza natychmiastową klęskę. Masz na to ${MAX_TURNS} tur.`;
+      `oznacza natychmiastową klęskę. Masz na to ${formatTime(MAX_TIME_SEC)}.`;
     box.appendChild(goal);
+
+    const realtime = document.createElement('p');
+    realtime.innerHTML =
+      '<strong>Gra toczy się w czasie rzeczywistym</strong> - złoto, rozwój ' +
+      'miast i wrogie fale nie czekają na Ciebie. Przyciskiem "Pauza" możesz ' +
+      'w każdej chwili zatrzymać czas, żeby spokojnie wydać rozkazy.';
+    box.appendChild(realtime);
 
     const controls = document.createElement('p');
     controls.innerHTML =

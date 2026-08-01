@@ -8,7 +8,7 @@ import {
 function withArmy(state, armyId, owner, atHex, units) {
   return {
     ...state,
-    armies: { ...state.armies, [armyId]: { id: armyId, owner, q: atHex.q, r: atHex.r, units, movementLeft: 0 } },
+    armies: { ...state.armies, [armyId]: { id: armyId, owner, q: atHex.q, r: atHex.r, units, path: null, progress: 0 } },
   };
 }
 

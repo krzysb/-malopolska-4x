@@ -4,6 +4,7 @@
 // hexPoints + buildBoard raz, potem tylko aktualizacja klas/atrybutów), dostosowany
 // do danych stanu 4X (teren + miasta + armie zamiast dwugraczowej planszy).
 import { axialToPixel, hexPolygonPoints, parseKey } from '../engine/hexgrid.js';
+import { SHIELD_PATH, CITY_CHARGES, chargeShapes } from './heraldry.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 export const HEX_SIZE = 10;
@@ -82,7 +83,13 @@ export function createHexRenderer(svg, { onHexClick } = {}) {
       let group = cityGroups.get(city.id);
       if (!group) {
         group = svgEl('g');
-        group.append(svgEl('circle', { r: HEX_SIZE * 0.55 }), svgEl('text', { class: 'city-label' }));
+        const scale = (HEX_SIZE * 0.55) / 5.5; // dopasuj bazowy rozmiar tarczy (jednostki -5.5..6.5) do promienia markera
+        const crestGroup = svgEl('g', { class: 'crest', transform: `scale(${scale})` });
+        crestGroup.appendChild(svgEl('path', { class: 'crest-shield', d: SHIELD_PATH }));
+        for (const { tag, class: shapeClass, attrs } of chargeShapes(CITY_CHARGES[city.id])) {
+          crestGroup.appendChild(svgEl(tag, { ...attrs, class: shapeClass }));
+        }
+        group.append(crestGroup, svgEl('text', { class: 'city-label' }));
         citiesLayer.appendChild(group);
         cityGroups.set(city.id, group);
       }

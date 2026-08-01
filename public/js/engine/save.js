@@ -3,7 +3,10 @@
 // przeglądarki/DOM. Wersjonowane, bez logiki migracji (MVP: niezgodna wersja
 // zapisu = traktujemy jak brak zapisu, zaczynamy nową grę).
 export const SAVE_KEY = 'malopolska4x:mission1:save';
-export const SAVE_VERSION = 1;
+// v2: przejście na symulację czasu rzeczywistego (state.turn -> state.time,
+// armie mają path/progress zamiast movementLeft) - niezgodne ze starymi
+// zapisami, stąd bump wersji (MVP: brak migracji, stary zapis = brak zapisu).
+export const SAVE_VERSION = 2;
 
 export function saveGame(state, storage = globalThis.localStorage) {
   const payload = JSON.stringify({ version: SAVE_VERSION, savedAt: Date.now(), state });

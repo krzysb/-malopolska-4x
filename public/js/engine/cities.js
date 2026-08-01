@@ -1,5 +1,8 @@
 // Ekonomia i rozbudowa miast: budynki, dochód złota, wzrost poziomu miasta.
+// Gra działa w czasie rzeczywistym - dochód/wzrost nalicza się co tick (dtSeconds),
+// nie raz na turę.
 import { BUILDINGS, CITY_GROWTH_THRESHOLDS, BASE_GOLD_PER_TURN, BASE_GROWTH_PER_TURN } from '../data/buildings.js';
+import { TIME_SCALE_SEC_PER_TURN } from '../data/missionConfig.js';
 
 export function buildingLevel(city, buildingId) {
   return city.buildings[buildingId] || 0;
@@ -38,27 +41,29 @@ export function buildBuilding(state, cityId, buildingId) {
   };
 }
 
-export function cityGoldIncome(city) {
+export function cityGoldIncomePerSec(city) {
   const marketLevel = buildingLevel(city, 'market');
-  return BASE_GOLD_PER_TURN + marketLevel * BUILDINGS.market.goldPerTurnPerLevel;
+  const perTurn = BASE_GOLD_PER_TURN + marketLevel * BUILDINGS.market.goldPerTurnPerLevel;
+  return perTurn / TIME_SCALE_SEC_PER_TURN;
 }
 
-export function cityGrowthPerTurn(city) {
+export function cityGrowthPerSec(city) {
   const granaryLevel = buildingLevel(city, 'granary');
-  return BASE_GROWTH_PER_TURN + granaryLevel * BUILDINGS.granary.growthPerTurnPerLevel;
+  const perTurn = BASE_GROWTH_PER_TURN + granaryLevel * BUILDINGS.granary.growthPerTurnPerLevel;
+  return perTurn / TIME_SCALE_SEC_PER_TURN;
 }
 
 export function maxCityLevel() {
   return CITY_GROWTH_THRESHOLDS.length;
 }
 
-// Nalicza wzrost jednego miasta o jedną turę: dodaje punkty rozwoju i podnosi
+// Nalicza wzrost jednego miasta o dtSeconds: dodaje punkty rozwoju i podnosi
 // poziom miasta, jeśli przekroczono próg. Zwraca nowy obiekt miasta.
-export function applyCityGrowth(city) {
+export function tickCityGrowth(city, dtSeconds) {
   const maxLevel = maxCityLevel();
   if (city.level >= maxLevel) return city;
 
-  const growth = city.growth + cityGrowthPerTurn(city);
+  const growth = city.growth + cityGrowthPerSec(city) * dtSeconds;
   let level = city.level;
   while (level < maxLevel && growth >= CITY_GROWTH_THRESHOLDS[level]) {
     level++;
@@ -66,15 +71,16 @@ export function applyCityGrowth(city) {
   return { ...city, growth, level };
 }
 
-// Nalicza ekonomię tury (dochód złota + wzrost) dla wszystkich miast należących do gracza.
-export function processCityEconomy(state) {
+// Nalicza ekonomię (dochód złota + wzrost) o dtSeconds dla wszystkich miast
+// należących do gracza. Wywoływane co tick symulacji, nie raz na turę.
+export function tickCityEconomy(state, dtSeconds) {
   let gold = state.player.gold;
   const cities = { ...state.cities };
 
   for (const [id, city] of Object.entries(state.cities)) {
     if (city.owner !== 'player') continue;
-    gold += cityGoldIncome(city);
-    cities[id] = applyCityGrowth(city);
+    gold += cityGoldIncomePerSec(city) * dtSeconds;
+    cities[id] = tickCityGrowth(city, dtSeconds);
   }
 
   return { ...state, player: { ...state.player, gold }, cities };

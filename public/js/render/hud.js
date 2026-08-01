@@ -1,9 +1,15 @@
-// HUD: tura, złoto, status gry. Prosty moduł renderujący istniejące elementy DOM
-// (bez tworzenia ich - te są w index.html) w oparciu o aktualny stan gry.
+// HUD: czas misji, złoto, status gry. Prosty moduł renderujący istniejące
+// elementy DOM (bez tworzenia ich - te są w index.html) w oparciu o stan gry.
+export function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
 export function createHud({ turnEl, goldEl, statusEl }) {
   function render(state) {
-    turnEl.textContent = `Tura ${state.turn}`;
-    goldEl.textContent = `Złoto ${state.player.gold}`;
+    turnEl.textContent = `Czas ${formatTime(state.time)}`;
+    goldEl.textContent = `Złoto ${Math.floor(state.player.gold)}`;
     statusEl.textContent =
       state.status === 'playing' ? '' : state.status === 'victory' ? 'Zwycięstwo!' : 'Porażka';
     statusEl.className = state.status === 'playing' ? '' : `hud-status-${state.status}`;

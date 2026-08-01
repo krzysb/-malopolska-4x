@@ -29,9 +29,9 @@ describe('state', () => {
     }
   });
 
-  test('stan startowy: tura 1, status playing, złoto gracza dodatnie', () => {
+  test('stan startowy: czas 0, status playing, złoto gracza dodatnie', () => {
     const state = createInitialState();
-    assert.equal(state.turn, 1);
+    assert.equal(state.time, 0);
     assert.equal(state.status, 'playing');
     assert.ok(state.player.gold > 0);
   });

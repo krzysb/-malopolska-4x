@@ -1,6 +1,6 @@
 # Małopolska 4X
 
-Turowa gra strategiczna 4X osadzona w historii Małopolski. Misja 1:
+Gra strategiczna 4X w czasie rzeczywistym, osadzona w historii Małopolski. Misja 1:
 najazdy tatarskie na rozbite dzielnicowo ziemie (XIII w.) — broń i
 zjednocz małopolskie grody.
 
@@ -26,8 +26,9 @@ npm run test:e2e  # smoke-test w przeglądarce (Playwright, desktop+mobile)
 
 ## Status
 
-Misja 1 jest kompletna i grywalna od odprawy po ekran końcowy: mapa,
-ekonomia miast, rekrutacja i ruch wojsk, walka, trzy fale najazdu tatarskiego,
+Misja 1 jest kompletna i grywalna od odprawy po ekran końcowy: gra toczy się
+w czasie rzeczywistym (pauza/2× w HUD) - mapa z herbami miast, ekonomia,
+rekrutacja i ciągły ruch wojsk, walka, trzy fale najazdu tatarskiego,
 warunki zwycięstwa/porażki, zapis w localStorage, responsywny UI.
 
 ## Dokumentacja

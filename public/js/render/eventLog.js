@@ -3,6 +3,7 @@
 // tylko fakty (kto/co/wygrana?) - cała warstwa językowa żyje tutaj, żeby dało się
 // ją swobodnie dopracować (etap "polish") bez dotykania logiki gry.
 import { TATAR_WAVES } from '../data/missionConfig.js';
+import { formatTime } from './hud.js';
 
 const MAX_VISIBLE_ENTRIES = 40;
 
@@ -57,7 +58,7 @@ export function createEventLog(listEl) {
       const text = describeEntry(entry, state);
       if (!text) continue;
       const li = document.createElement('li');
-      li.textContent = `Tura ${entry.turn}: ${text}`;
+      li.textContent = `[${formatTime(entry.time)}] ${text}`;
       listEl.appendChild(li);
     }
   }

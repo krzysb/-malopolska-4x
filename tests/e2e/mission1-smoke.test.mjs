@@ -7,9 +7,9 @@ import { chromium } from 'playwright';
 
 // Smoke-test end-to-end: uruchamia prawdziwy serwer i przeglądarkę (desktop +
 // mobile viewport), sprawdza że gra się ładuje bez błędów konsoli i że
-// podstawowa interakcja (wybór miasta, koniec tury) działa. Osobny od
-// `npm test` (silnik) - wolniejszy, wymaga przeglądarki, uruchamiany ręcznie
-// przez `npm run test:e2e`.
+// podstawowa interakcja (wybór miasta, pętla symulacji czasu rzeczywistego,
+// pauza) działa. Osobny od `npm test` (silnik) - wolniejszy, wymaga
+// przeglądarki, uruchamiany ręcznie przez `npm run test:e2e`.
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.join(__dirname, '..', '..');
 const PORT = 3177; // inny niż domyślny 3100, żeby nie kolidować z sesją deweloperską
@@ -139,17 +139,34 @@ test('desktop: kliknięcie miasta gracza otwiera panel z budynkami i rekrutacją
   await page.close();
 });
 
-test('koniec tury zwiększa licznik tur i nie zostawia błędów w konsoli', async () => {
+test('symulacja czasu rzeczywistego płynie sama (czas i złoto rosną bez klikania)', async () => {
   const { page, consoleErrors } = await openPage({ width: 1280, height: 800 });
   await dismissBriefing(page);
 
-  const turnBefore = await page.locator('#hud-turn').textContent();
-  await page.click('#end-turn-btn');
-  await page.waitForTimeout(150);
-  const turnAfter = await page.locator('#hud-turn').textContent();
+  const timeBefore = await page.locator('#hud-turn').textContent();
+  await page.waitForTimeout(1500); // symulacja tyka sama, bez żadnej akcji użytkownika
+  const timeAfter = await page.locator('#hud-turn').textContent();
 
-  assert.notEqual(turnBefore, turnAfter);
-  assert.equal(turnAfter, 'Tura 2');
+  assert.notEqual(timeBefore, timeAfter, 'czas gry powinien płynąć samoczynnie');
+  assert.deepEqual(consoleErrors, []);
+  await page.close();
+});
+
+test('przycisk Pauza zatrzymuje upływ czasu, Wznów wznawia', async () => {
+  const { page, consoleErrors } = await openPage({ width: 1280, height: 800 });
+  await dismissBriefing(page);
+
+  await page.click('#pause-btn');
+  const timeAtPause = await page.locator('#hud-turn').textContent();
+  await page.waitForTimeout(1000);
+  const timeStillPaused = await page.locator('#hud-turn').textContent();
+  assert.equal(timeAtPause, timeStillPaused, 'czas nie powinien płynąć podczas pauzy');
+
+  await page.click('#pause-btn'); // wznów
+  await page.waitForTimeout(1000);
+  const timeAfterResume = await page.locator('#hud-turn').textContent();
+  assert.notEqual(timeStillPaused, timeAfterResume, 'czas powinien znów płynąć po wznowieniu');
+
   assert.deepEqual(consoleErrors, []);
   await page.close();
 });
@@ -157,8 +174,8 @@ test('koniec tury zwiększa licznik tur i nie zostawia błędów w konsoli', asy
 test('przyciski mają rozsądny rozmiar celu dotykowego na widoku mobilnym (>=32px wysokości)', async () => {
   const { page, consoleErrors } = await openPage({ width: 390, height: 844 });
 
-  const height = await page.locator('#end-turn-btn').evaluate((el) => el.getBoundingClientRect().height);
-  assert.ok(height >= 32, `przycisk końca tury ma ${height}px wysokości - za mały cel dotykowy`);
+  const height = await page.locator('#pause-btn').evaluate((el) => el.getBoundingClientRect().height);
+  assert.ok(height >= 32, `przycisk pauzy ma ${height}px wysokości - za mały cel dotykowy`);
 
   assert.deepEqual(consoleErrors, []);
   await page.close();

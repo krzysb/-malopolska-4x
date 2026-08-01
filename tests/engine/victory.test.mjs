@@ -2,8 +2,8 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { createInitialState } from '../../public/js/engine/state.js';
 import { checkVictoryConditions } from '../../public/js/engine/victory.js';
-import { endTurn } from '../../public/js/engine/turn.js';
-import { VICTORY_CITY_THRESHOLD, MAX_TURNS, TATAR_WAVES } from '../../public/js/data/missionConfig.js';
+import { tick } from '../../public/js/engine/simulation.js';
+import { VICTORY_CITY_THRESHOLD, MAX_TIME_SEC, TATAR_WAVES } from '../../public/js/data/missionConfig.js';
 
 describe('victory', () => {
   test('gra trwa dalej, gdy żaden warunek nie jest spełniony', () => {
@@ -32,7 +32,7 @@ describe('victory', () => {
     const won = {
       ...state,
       cities,
-      waves: [{ id: 3, year: 1287, spawnedTurn: 27, withdrawn: true }],
+      waves: [{ id: 3, year: 1287, spawnedTime: 216, withdrawn: true }],
       armies: {}, // brak aktywnych armii tatarskich - fala 3 "zakończona"
     };
     assert.equal(checkVictoryConditions(won).status, 'victory');
@@ -46,15 +46,15 @@ describe('victory', () => {
     const stillFighting = {
       ...state,
       cities,
-      waves: [{ id: 3, year: 1287, spawnedTurn: 27, withdrawn: false }],
-      armies: { 'tatar@0,0': { id: 'tatar@0,0', owner: 'tatar', q: 0, r: 0, units: [{ type: 'tatar-raiders', count: 1 }], movementLeft: 0 } },
+      waves: [{ id: 3, year: 1287, spawnedTime: 216, withdrawn: false }],
+      armies: { 'tatar@0,0': { id: 'tatar@0,0', owner: 'tatar', q: 0, r: 0, units: [{ type: 'tatar-raiders', count: 1 }], path: null, progress: 0 } },
     };
     assert.equal(checkVictoryConditions(stillFighting).status, 'playing');
   });
 
-  test('przekroczenie limitu tur bez zwycięstwa oznacza porażkę', () => {
+  test('przekroczenie limitu czasu bez zwycięstwa oznacza porażkę', () => {
     const state = createInitialState();
-    const overLimit = { ...state, turn: MAX_TURNS + 1 };
+    const overLimit = { ...state, time: MAX_TIME_SEC };
     assert.equal(checkVictoryConditions(overLimit).status, 'defeat');
   });
 
@@ -66,13 +66,13 @@ describe('victory', () => {
     assert.equal(checkVictoryConditions(defeated).status, 'defeat');
   });
 
-  test('endTurn nie zmienia już zakończonego stanu gry', () => {
+  test('tick (symulacja) nie zmienia już zakończonego stanu gry', () => {
     const state = createInitialState();
     const ended = { ...state, status: 'defeat' };
-    assert.equal(endTurn(ended), ended);
+    assert.equal(tick(ended, 1), ended);
   });
 
-  test(`harmonogram fal: ostatnia (3.) fala pojawia się przed MAX_TURNS`, () => {
-    assert.ok(TATAR_WAVES[TATAR_WAVES.length - 1].spawnTurn < MAX_TURNS);
+  test('harmonogram fal: ostatnia (3.) fala pojawia się przed MAX_TIME_SEC', () => {
+    assert.ok(TATAR_WAVES[TATAR_WAVES.length - 1].spawnTimeSec < MAX_TIME_SEC);
   });
 });

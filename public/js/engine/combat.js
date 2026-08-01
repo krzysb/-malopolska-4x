@@ -103,7 +103,7 @@ export function resolveBattle(state, attackerArmyId, target, mapHexes) {
   }
 
   const logEntry = {
-    turn: state.turn,
+    time: state.time,
     type: 'battle',
     attackerId: attackerArmyId,
     attackerOwner: attackerArmy.owner,
@@ -113,4 +113,34 @@ export function resolveBattle(state, attackerArmyId, target, mapHexes) {
   };
 
   return { ...state, armies, cities, log: [...state.log, logEntry], rngSeed: seq.seed() };
+}
+
+// Skanuje wszystkie armie i rozstrzyga każde starcie wynikające z ruchu w tym
+// ticku (armia stoi na heksie z wrogim miastem albo wrogą armią). Wywoływane
+// raz na tick symulacji, zaraz po tickArmiesMovement (units.js) - w czasie
+// rzeczywistym walka nie jest już wyzwalana ręcznie przez UI/AI po jednym
+// ruchu, tylko wykrywana tutaj, cyklicznie, dopóki obie strony nie rozstrzygną
+// starcia (jedna zostanie zniszczona/wyparta albo miasto padnie).
+export function resolvePendingBattles(state, mapHexes) {
+  let next = state;
+
+  for (const armyId of Object.keys(state.armies)) {
+    const army = next.armies[armyId];
+    if (!army) continue; // mogła zniknąć jako obrońca we wcześniejszym starciu w tym samym ticku
+
+    const cityHere = Object.values(next.cities).find((c) => c.q === army.q && c.r === army.r && c.owner !== army.owner);
+    if (cityHere) {
+      next = resolveBattle(next, armyId, { type: 'city', id: cityHere.id }, mapHexes);
+      continue;
+    }
+
+    const enemyArmy = Object.values(next.armies).find(
+      (a) => a.id !== armyId && a.q === army.q && a.r === army.r && a.owner !== army.owner,
+    );
+    if (enemyArmy) {
+      next = resolveBattle(next, armyId, { type: 'army', id: enemyArmy.id }, mapHexes);
+    }
+  }
+
+  return next;
 }

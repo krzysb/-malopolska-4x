@@ -1,9 +1,12 @@
-// Rekrutacja jednostek, ruch armii i łączenie stosów. Silnik pozostaje czysty -
-// każda funkcja zwraca nowy stan, nigdy nie mutuje wejścia.
+// Rekrutacja jednostek i ciągły (czas rzeczywisty) ruch armii wzdłuż zleconej
+// ścieżki. Silnik pozostaje czysty - każda funkcja zwraca nowy stan, nigdy nie
+// mutuje wejścia. Walka NIE jest tu wyzwalana - to zadanie simulation.js, które
+// po każdym ticku ruchu skanuje, czy jakaś armia stoi na heksie z wrogiem.
 import { key } from './hexgrid.js';
 import { MOVE_COST } from '../data/mapData.js';
 import { UNIT_TYPES } from '../data/unitTypes.js';
 import { BUILDINGS } from '../data/buildings.js';
+import { TIME_SCALE_SEC_PER_TURN } from '../data/missionConfig.js';
 
 // Tożsamość armii = (właściciel, heks). Uproszczenie MVP: przemieszczenie armii
 // zmienia jej id, naturalnie łącząc ją z inną armią tego samego właściciela
@@ -19,9 +22,15 @@ export function mergeUnitStacks(a = [], b = []) {
   return [...counts.entries()].map(([type, count]) => ({ type, count }));
 }
 
-// Stos rusza w tempie najwolniejszej jednostki w składzie.
+// Punkty ruchu na "turę" (stara jednostka bazowa, wygodna do pokazania w UI
+// jako względny rating prędkości) - stos rusza w tempie najwolniejszej jednostki.
 export function armyMovementPoints(units) {
   return Math.min(...units.map(({ type }) => UNIT_TYPES[type].movement));
+}
+
+// To samo, ale przeliczone na punkty/sekundę - realna prędkość używana w ticku.
+export function armySpeed(units) {
+  return armyMovementPoints(units) / TIME_SCALE_SEC_PER_TURN;
 }
 
 // Koszt rekrutacji z uwzględnieniem zniżki z koszar. Eksportowana, żeby UI (np.
@@ -34,11 +43,12 @@ export function recruitCost(city, unitTypeId) {
 }
 
 // Rekrutuje jednostkę w mieście: dodaje do garnizonu albo do armii stojącej na
-// heksie miasta (tworząc ją, jeśli jeszcze nie istnieje). Nie waliduje właściciela
-// miasta - jak w cities.js, to decyzja UI/wywołującego, funkcja waliduje tylko złoto.
+// heksie miasta (tworząc ją, jeśli jeszcze nie istnieje). Dołączenie do armii
+// będącej w trakcie marszu nie przerywa jej zleconej ścieżki. Nie waliduje
+// właściciela miasta - jak w cities.js, to decyzja UI/wywołującego, funkcja
+// waliduje tylko złoto.
 export function recruitUnit(state, cityId, unitTypeId, destination = 'garrison') {
   const city = state.cities[cityId];
-  const unitDef = UNIT_TYPES[unitTypeId];
   const cost = recruitCost(city, unitTypeId);
   if (state.player.gold < cost) return state;
 
@@ -68,59 +78,60 @@ export function recruitUnit(state, cityId, unitTypeId, destination = 'garrison')
         q: city.q,
         r: city.r,
         units,
-        movementLeft: existing
-          ? Math.min(existing.movementLeft, unitDef.movement)
-          : armyMovementPoints(units),
+        path: existing?.path ?? null,
+        progress: existing?.progress ?? 0,
       },
     },
   };
 }
 
-// Resetuje punkty ruchu wszystkich armii na początku tury (wywoływane z turn.js).
-export function resetArmiesMovement(state) {
-  const armies = {};
-  for (const [id, army] of Object.entries(state.armies)) {
-    armies[id] = { ...army, movementLeft: armyMovementPoints(army.units) };
-  }
-  return { ...state, armies };
+// Zleca armii nową ścieżkę (z pathfinding.js), którą pokona w kolejnych tickach
+// symulacji - zastępuje poprzednią zleconą ścieżkę, jeśli jakaś trwała.
+export function setArmyPath(state, armyId, path) {
+  const army = state.armies[armyId];
+  if (!army || !path || path.length === 0) return state;
+  return { ...state, armies: { ...state.armies, [armyId]: { ...army, path, progress: 0 } } };
 }
 
-// Przesuwa armię wzdłuż ścieżki (z pathfinding.js), zużywając punkty ruchu wg kosztu
-// terenu. Ruch częściowy: armia zatrzymuje się na najdalszym heksie osiągalnym w
-// ramach movementLeft, zamiast wymagać pokonania całej ścieżki na raz. Jeśli
-// docelowy heks jest już zajęty przez inną armię tego samego właściciela, stosy
-// się łączą.
-export function moveArmyAlongPath(state, armyId, path, mapHexes) {
-  const army = state.armies[armyId];
-  if (!army || path.length === 0) return state;
-
-  let movementLeft = army.movementLeft;
-  let last = { q: army.q, r: army.r };
-  let steps = 0;
-  for (const step of path) {
-    const cost = MOVE_COST[mapHexes[key(step.q, step.r)].terrain];
-    if (cost > movementLeft) break;
-    movementLeft -= cost;
-    last = step;
-    steps++;
-  }
-  if (steps === 0) return state;
-
+// Przesuwa o dtSeconds wszystkie armie mające zleconą, niepustą ścieżkę,
+// krok po kroku po heksach zgodnie z kosztem terenu (MOVE_COST). Armie tego
+// samego właściciela łączą się w jedną przy spotkaniu na wspólnym heksie -
+// łączony stos kontynuuje ścieżkę tej armii, która akurat weszła na heks.
+export function tickArmiesMovement(state, dtSeconds, mapHexes) {
   const armies = { ...state.armies };
-  delete armies[armyId];
+  const movingIds = Object.keys(armies).filter((id) => armies[id]?.path?.length > 0);
 
-  const destId = armyIdAt(army.owner, last.q, last.r);
-  const existing = destId !== armyId ? state.armies[destId] : null;
-  const units = existing ? mergeUnitStacks(existing.units, army.units) : army.units;
+  for (const armyId of movingIds) {
+    let army = armies[armyId];
+    if (!army) continue; // mogła zostać wchłonięta przez wcześniejszy krok tej pętli
 
-  armies[destId] = {
-    id: destId,
-    owner: army.owner,
-    q: last.q,
-    r: last.r,
-    units,
-    movementLeft: existing ? Math.min(existing.movementLeft, movementLeft) : movementLeft,
-  };
+    let progress = army.progress + dtSeconds * armySpeed(army.units);
+    let path = army.path;
+    let q = army.q;
+    let r = army.r;
+    let currentId = armyId;
+
+    while (path.length > 0) {
+      const next = path[0];
+      const cost = MOVE_COST[mapHexes[key(next.q, next.r)].terrain];
+      if (progress < cost) break;
+      progress -= cost;
+      q = next.q;
+      r = next.r;
+      path = path.slice(1);
+
+      const destId = armyIdAt(army.owner, q, r);
+      if (destId !== currentId) {
+        const existing = armies[destId];
+        delete armies[currentId];
+        const units = existing ? mergeUnitStacks(existing.units, army.units) : army.units;
+        army = { ...army, units };
+        currentId = destId;
+      }
+    }
+
+    armies[currentId] = { ...army, q, r, path, progress: path.length > 0 ? progress : 0 };
+  }
 
   return { ...state, armies };
 }

@@ -1,15 +1,14 @@
 // Bootstrap i kontroler UI gry: wczytuje zapis (jeśli istnieje) albo tworzy nową
 // rozgrywkę, buduje mapę, obsługuje kliknięcia (wybór miasta/armii, rozkazy ruchu
-// i ataku), przycisk końca tury oraz autosave. Silnik pozostaje czysty - ten
-// moduł jest jedynym miejscem trzymającym "bieżący" stan gry i wywołującym efekty
-// uboczne (DOM, localStorage).
+// i ataku), pętlę symulacji czasu rzeczywistego oraz autosave. Silnik pozostaje
+// czysty - ten moduł jest jedynym miejscem trzymającym "bieżący" stan gry i
+// wywołującym efekty uboczne (DOM, localStorage, requestAnimationFrame).
 import { createInitialState } from './engine/state.js';
 import { loadGame, saveGame, clearSave } from './engine/save.js';
-import { recruitUnit, moveArmyAlongPath, armyIdAt } from './engine/units.js';
+import { recruitUnit, setArmyPath } from './engine/units.js';
 import { buildBuilding } from './engine/cities.js';
 import { findPath } from './engine/pathfinding.js';
-import { resolveBattle } from './engine/combat.js';
-import { endTurn } from './engine/turn.js';
+import { tick } from './engine/simulation.js';
 import { key as hexKey } from './engine/hexgrid.js';
 import { createHexRenderer } from './render/hexRenderer.js';
 import { createHud } from './render/hud.js';
@@ -19,9 +18,14 @@ import { createEventLog } from './render/eventLog.js';
 import { createEndScreen } from './render/endScreen.js';
 import { createBriefing } from './render/briefing.js';
 
+const AUTOSAVE_INTERVAL_SEC = 5;
+const MAX_DT_SEC = 0.25; // zabezpieczenie przed skokiem czasu po uśpieniu karty
+const RENDER_INTERVAL_SEC = 1 / 15; // ograniczenie odświeżania DOM/SVG do ~15fps
+
 const svg = document.getElementById('hex-map');
 const sidePanel = document.getElementById('side-panel');
-const endTurnBtn = document.getElementById('end-turn-btn');
+const pauseBtn = document.getElementById('pause-btn');
+const speedBtn = document.getElementById('speed-btn');
 const newGameBtn = document.getElementById('new-game-btn');
 
 const hud = createHud({
@@ -38,13 +42,15 @@ const briefing = createBriefing(document.getElementById('briefing'), { onStart: 
 let state = loadGame() ?? createInitialState();
 let selectedArmyId = null;
 let selectedCityId = null;
+let paused = false;
+let speedMultiplier = 1;
 
 const renderer = createHexRenderer(svg, { onHexClick: handleHexClick });
 renderer.buildBoard(state);
 render();
-// Odprawa pokazuje się tylko przy zupełnie świeżej rozgrywce (tura 1, zero
+// Odprawa pokazuje się tylko przy zupełnie świeżej rozgrywce (czas 0, zero
 // wpisów w kronice - żaden najazd jeszcze nie wystartował).
-if (state.turn === 1 && state.log.length === 0) {
+if (state.time === 0 && state.log.length === 0) {
   briefing.render();
 } else {
   briefing.hide();
@@ -55,7 +61,8 @@ function render() {
   hud.render(state);
   eventLog.render(state);
   endScreen.render(state);
-  endTurnBtn.disabled = state.status !== 'playing';
+  pauseBtn.disabled = state.status !== 'playing';
+  speedBtn.disabled = state.status !== 'playing';
 
   if (selectedArmyId && state.armies[selectedArmyId]) {
     const army = state.armies[selectedArmyId];
@@ -86,13 +93,19 @@ function armyAt(q, r, owner) {
   return Object.values(state.armies).find((a) => a.q === q && a.r === r && (!owner || a.owner === owner)) ?? null;
 }
 
+// Kliknięcie mapy tylko ZLECA rozkaz (ruch/atak) - faktyczne przemieszczenie i
+// ewentualna walka rozstrzygają się w kolejnych tickach pętli symulacji, nie
+// natychmiast. Wybrana armia pozostaje zaznaczona, żeby dało się wydać kolejny
+// rozkaz bez ponownego klikania w nią.
 function handleHexClick(q, r) {
   if (state.status !== 'playing') return;
 
   if (selectedArmyId) {
-    state = orderArmyTo(state, selectedArmyId, { q, r });
-    selectedArmyId = null;
-    selectedCityId = null;
+    const army = state.armies[selectedArmyId];
+    if (army) {
+      const path = findPath(state.map.hexes, { q: army.q, r: army.r }, { q, r });
+      if (path && path.length > 0) state = setArmyPath(state, selectedArmyId, path);
+    }
     render();
     return;
   }
@@ -117,37 +130,6 @@ function handleHexClick(q, r) {
   render();
 }
 
-// Przesuwa armię po ścieżce z pathfinding.js; jeśli w tej turze dotrze dokładnie
-// na docelowy heks zajęty przez wrogie miasto lub wrogą armię, natychmiast
-// rozstrzyga walkę. Odpowiednik ai.js:moveAndMaybeAssault dla rozkazów gracza.
-function orderArmyTo(currentState, armyId, target) {
-  const army = currentState.armies[armyId];
-  if (!army) return currentState;
-
-  const mapHexes = currentState.map.hexes;
-  const path = findPath(mapHexes, { q: army.q, r: army.r }, target);
-  if (!path || path.length === 0) return currentState;
-
-  const moved = moveArmyAlongPath(currentState, armyId, path, mapHexes);
-  const arrivedId = armyIdAt(army.owner, target.q, target.r);
-  const arrived = moved.armies[arrivedId];
-  if (!arrived || arrived.q !== target.q || arrived.r !== target.r) return moved; // nie dotarła w tej turze
-
-  const targetCity = Object.values(moved.cities).find((c) => c.q === target.q && c.r === target.r);
-  if (targetCity && targetCity.owner !== army.owner) {
-    return resolveBattle(moved, arrivedId, { type: 'city', id: targetCity.id }, mapHexes);
-  }
-
-  const enemyArmy = Object.values(moved.armies).find(
-    (a) => a.id !== arrivedId && a.q === target.q && a.r === target.r && a.owner !== army.owner,
-  );
-  if (enemyArmy) {
-    return resolveBattle(moved, arrivedId, { type: 'army', id: enemyArmy.id }, mapHexes);
-  }
-
-  return moved;
-}
-
 function onBuild(buildingId) {
   if (!selectedCityId) return;
   state = buildBuilding(state, selectedCityId, buildingId);
@@ -169,15 +151,51 @@ function startNewGame() {
   briefing.render();
 }
 
-endTurnBtn.addEventListener('click', () => {
-  if (state.status !== 'playing') return;
-  state = endTurn(state);
-  closePanels();
-  saveGame(state);
-  render();
-});
-
 newGameBtn.addEventListener('click', () => {
   if (state.status === 'playing' && !window.confirm('Porzucić bieżącą rozgrywkę i zacząć nową grę?')) return;
   startNewGame();
 });
+
+pauseBtn.addEventListener('click', () => {
+  paused = !paused;
+  pauseBtn.textContent = paused ? 'Wznów' : 'Pauza';
+});
+
+speedBtn.addEventListener('click', () => {
+  speedMultiplier = speedMultiplier === 1 ? 2 : 1;
+  speedBtn.textContent = `${speedMultiplier}×`;
+});
+
+// Pętla symulacji czasu rzeczywistego: dt liczony z realnego upływu czasu
+// między klatkami (requestAnimationFrame), przeskalowany przez speedMultiplier
+// i ograniczony (MAX_DT_SEC), żeby powrót do uśpionej karty nie "nadrobił"
+// naraz wielu minut symulacji jednym gigantycznym tickiem.
+let lastTimestamp = null;
+let timeSinceAutosave = 0;
+let timeSinceRender = 0;
+
+function loop(timestamp) {
+  if (lastTimestamp !== null && !paused && state.status === 'playing') {
+    const rawDt = (timestamp - lastTimestamp) / 1000;
+    const dt = Math.min(rawDt, MAX_DT_SEC) * speedMultiplier;
+    if (dt > 0) {
+      state = tick(state, dt);
+
+      timeSinceAutosave += dt;
+      if (timeSinceAutosave >= AUTOSAVE_INTERVAL_SEC) {
+        saveGame(state);
+        timeSinceAutosave = 0;
+      }
+      if (state.status !== 'playing') saveGame(state); // zachowaj końcowy wynik natychmiast
+
+      timeSinceRender += dt;
+      if (timeSinceRender >= RENDER_INTERVAL_SEC) {
+        render();
+        timeSinceRender = 0;
+      }
+    }
+  }
+  lastTimestamp = timestamp;
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);

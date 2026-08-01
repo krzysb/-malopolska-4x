@@ -1,5 +1,7 @@
 // Pełnoekranowa nakładka pokazywana, gdy state.status !== 'playing' (zwycięstwo
 // albo porażka), z krótkim podsumowaniem i przyciskiem nowej gry.
+import { formatTime } from './hud.js';
+
 export function createEndScreen(container, { onNewGame }) {
   function render(state) {
     if (state.status === 'playing') {
@@ -12,7 +14,7 @@ export function createEndScreen(container, { onNewGame }) {
     container.innerHTML = '';
 
     const playerCities = Object.values(state.cities).filter((c) => c.owner === 'player').length;
-    const lastTurn = Math.max(1, state.turn - 1);
+    const elapsed = formatTime(state.time);
 
     const box = document.createElement('div');
     box.className = 'end-screen-box';
@@ -24,8 +26,8 @@ export function createEndScreen(container, { onNewGame }) {
     const summary = document.createElement('p');
     summary.textContent =
       state.status === 'victory'
-        ? `Obroniłeś i zjednoczyłeś małopolskie grody, utrzymując ${playerCities} z 7 miast po trzeciej fali najazdu (tura ${lastTurn}).`
-        : `Władza nad Małopolską upadła w turze ${lastTurn}. Pod twoją kontrolą pozostało ${playerCities} z 7 miast.`;
+        ? `Obroniłeś i zjednoczyłeś małopolskie grody, utrzymując ${playerCities} z 7 miast po trzeciej fali najazdu (czas: ${elapsed}).`
+        : `Władza nad Małopolską upadła po ${elapsed}. Pod twoją kontrolą pozostało ${playerCities} z 7 miast.`;
     box.appendChild(summary);
 
     const btn = document.createElement('button');

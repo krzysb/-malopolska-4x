@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createInitialState } from '../../public/js/engine/state.js';
 import {
   buildingLevel, nextBuildingCost, canBuild, buildBuilding,
-  cityGoldIncome, cityGrowthPerTurn, applyCityGrowth, processCityEconomy, maxCityLevel,
+  cityGoldIncomePerSec, cityGrowthPerSec, tickCityGrowth, tickCityEconomy, maxCityLevel,
 } from '../../public/js/engine/cities.js';
 
 describe('cities', () => {
@@ -42,25 +42,25 @@ describe('cities', () => {
     assert.equal(buildingLevel(maxed.cities.krakow, 'church'), 1);
   });
 
-  test('cityGoldIncome i cityGrowthPerTurn rosną z poziomem budynków', () => {
+  test('cityGoldIncomePerSec i cityGrowthPerSec rosną z poziomem budynków', () => {
     const state = createInitialState();
     const base = state.cities.krakow;
     const withMarket = { ...base, buildings: { ...base.buildings, market: 2 } };
-    assert.ok(cityGoldIncome(withMarket) > cityGoldIncome(base));
+    assert.ok(cityGoldIncomePerSec(withMarket) > cityGoldIncomePerSec(base));
 
     const withGranary = { ...base, buildings: { ...base.buildings, granary: 2 } };
-    assert.ok(cityGrowthPerTurn(withGranary) > cityGrowthPerTurn(base));
+    assert.ok(cityGrowthPerSec(withGranary) > cityGrowthPerSec(base));
   });
 
-  test('applyCityGrowth podnosi poziom miasta po przekroczeniu progu, nie przekracza max', () => {
+  test('tickCityGrowth podnosi poziom miasta po przekroczeniu progu, nie przekracza max', () => {
     let city = { level: 1, growth: 0, buildings: { granary: 0, market: 0, walls: 0, barracks: 0, church: 0 } };
-    for (let i = 0; i < 100; i++) city = applyCityGrowth(city);
+    for (let i = 0; i < 1000; i++) city = tickCityGrowth(city, 1);
     assert.equal(city.level, maxCityLevel());
   });
 
-  test('processCityEconomy nalicza złoto i wzrost tylko dla miast gracza', () => {
+  test('tickCityEconomy nalicza złoto i wzrost (o dtSeconds) tylko dla miast gracza', () => {
     const state = createInitialState();
-    const next = processCityEconomy(state);
+    const next = tickCityEconomy(state, 10);
     assert.ok(next.player.gold > state.player.gold, 'złoto powinno wzrosnąć');
     assert.ok(next.cities.krakow.growth > 0, 'miasto gracza powinno się rozwijać');
     assert.equal(next.cities.wislica.growth, 0, 'miasto neutralne nie powinno się rozwijać');

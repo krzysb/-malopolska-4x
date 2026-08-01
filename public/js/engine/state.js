@@ -46,7 +46,7 @@ export function createInitialState({ seed = 1, cities = CITIES } = {}) {
   }
 
   return {
-    turn: 1,
+    time: 0, // sekundy gry w czasie rzeczywistym (zamiast numeru tury)
     status: 'playing',
     map: { cols: COLS, rows: ROWS, hexes },
     cities: citiesState,
