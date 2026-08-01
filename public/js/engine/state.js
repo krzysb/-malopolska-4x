@@ -4,12 +4,14 @@
 import { generateRectangle, key } from './hexgrid.js';
 import { COLS, ROWS, CITIES, buildTerrainGrid } from '../data/mapData.js';
 
-const STARTING_GOLD = 100;
+const STARTING_GOLD = 150;
 
 function defaultGarrisonFor(city) {
   if (city.capital) return [{ type: 'infantry', count: 3 }, { type: 'archers', count: 2 }];
   if (city.owner === 'player') return [{ type: 'infantry', count: 2 }];
-  return [{ type: 'infantry', count: 2 }];
+  // Miasta neutralne startują ze słabym garnizonem - pierwszy podbój ma być
+  // osiągalny dla niewielkiej, wczesnej armii, nie wymagać dużej inwestycji.
+  return [{ type: 'infantry', count: 1 }];
 }
 
 export function createInitialState({ seed = 1, cities = CITIES } = {}) {

@@ -11,7 +11,7 @@ import { createRngSequence } from './rng.js';
 export const RNG_VARIANCE = 0.15; // +/-15% losowej wariancji siły walczącej strony
 export const MIN_CASUALTY_RATE = 0.05;
 export const MAX_CASUALTY_RATE = 0.9;
-export const CAPTURE_STRENGTH_MULTIPLIER = 1.2; // przewaga ataku potrzebna, by przełamać obronę miasta
+export const CAPTURE_STRENGTH_MULTIPLIER = 1.1; // przewaga ataku potrzebna, by przełamać obronę miasta
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));

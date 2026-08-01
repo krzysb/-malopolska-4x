@@ -20,7 +20,7 @@ describe('combat', () => {
 
   test('przytłaczający atak na słabo broniony neutralny gród: zdobycie miasta', () => {
     const state = createInitialState();
-    const city = state.cities.wislica; // neutralne miasto, garnizon [{infantry,2}]
+    const city = state.cities.wislica; // neutralne miasto, garnizon [{infantry,1}]
     const stateWithArmy = withArmy(state, 'atk1', 'player', city, [{ type: 'cavalry', count: 50 }]);
 
     const next = resolveBattle(stateWithArmy, 'atk1', { type: 'city', id: 'wislica' }, state.map.hexes);
