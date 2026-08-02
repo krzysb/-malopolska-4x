@@ -50,6 +50,11 @@ export function createCityPanel(container, { onBuild, onRecruit, onClose }) {
         row.appendChild(max);
       }
       section.appendChild(row);
+
+      const desc = document.createElement('p');
+      desc.className = 'panel-hint panel-building-desc';
+      desc.textContent = def.description;
+      section.appendChild(desc);
     }
     return section;
   }
@@ -108,6 +113,14 @@ export function createCityPanel(container, { onBuild, onRecruit, onClose }) {
     if (city.owner === 'player') {
       container.appendChild(renderBuildings(city, gold));
       container.appendChild(renderRecruitment(city, gold));
+    } else {
+      const captureHint = document.createElement('p');
+      captureHint.className = 'panel-hint';
+      captureHint.textContent =
+        city.owner === 'neutral'
+          ? 'Zdobycie tego grodu: dodatkowy dochód złota, możliwość budowy i rekrutacji na miejscu, i liczy się do progu zwycięstwa (utrzymaj wymaganą liczbę miast po 3. fali).'
+          : 'Odbicie tego grodu z rąk Tatarów: przywraca dochód złota i rekrutację, i ponownie liczy się do progu zwycięstwa.';
+      container.appendChild(captureHint);
     }
 
     const closeBtn = document.createElement('button');

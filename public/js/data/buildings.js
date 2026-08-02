@@ -9,22 +9,22 @@ export const BUILDINGS = {
   },
   barracks: {
     id: 'barracks', name: 'Koszary', maxLevel: 2, cost: [35, 65],
-    description: 'Odblokowuje szybszą i tańszą rekrutację jednostek.',
+    description: 'Obniża koszt rekrutacji wszystkich jednostek o 15% za poziom.',
     recruitDiscountPerLevel: 0.15,
   },
   market: {
     id: 'market', name: 'Rynek', maxLevel: 2, cost: [30, 55],
-    description: 'Zwiększa dochód złota o 4 za poziom na turę.',
+    description: 'Zwiększa dochód złota tego miasta o 0,5 na sekundę za poziom.',
     goldPerTurnPerLevel: 4,
   },
   granary: {
     id: 'granary', name: 'Spichlerz', maxLevel: 2, cost: [30, 55],
-    description: 'Przyspiesza rozwój miasta (wzrost poziomu).',
+    description: 'Przyspiesza wzrost poziomu miasta o 0,5 punktu rozwoju na sekundę za poziom.',
     growthPerTurnPerLevel: 4,
   },
   church: {
     id: 'church', name: 'Kościół', maxLevel: 1, cost: [45],
-    description: 'Zwiększa morale (siłę obrony) rekrutowanych jednostek.',
+    description: 'Podnosi morale obrońców - siła obrony całego garnizonu miasta w starciu rośnie o 10%.',
     moraleBonus: 0.1,
   },
 };

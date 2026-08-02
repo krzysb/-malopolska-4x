@@ -80,7 +80,7 @@ body {
 /* Znaczniki miast/armii i podświetlenie leżą nad heksami terenu, ale nie mogą
    przechwytywać kliknięć - obsługa kliknięcia siedzi wyłącznie na polygonach
    terenu w hexRenderer.js, żeby zawsze trafiać we właściwy heks (q,r). */
-.layer-cities, .layer-armies, .layer-highlight {
+.layer-cities, .layer-armies, .layer-highlight, .layer-paths {
   pointer-events: none;
 }
 
@@ -122,6 +122,21 @@ body {
   stroke: var(--color-bg);
   stroke-width: 2px;
 }
+
+.army-path-line {
+  fill: none;
+  stroke-width: 1;
+  stroke-dasharray: 1.6 1.4;
+  opacity: 0.85;
+}
+.army-path-dest {
+  stroke: none;
+  opacity: 0.85;
+}
+.army-path.owner-player .army-path-line,
+.army-path.owner-player .army-path-dest { stroke: var(--owner-player); fill: var(--owner-player); }
+.army-path.owner-tatar .army-path-line,
+.army-path.owner-tatar .army-path-dest { stroke: var(--owner-tatar); fill: var(--owner-tatar); }
 
 .army-marker polygon {
   stroke: var(--color-text);
@@ -176,6 +191,11 @@ button:not(:disabled):hover {
 .panel-hint {
   font-style: italic;
   color: var(--color-accent);
+}
+.panel-building-desc {
+  font-size: 0.78rem;
+  margin: 0 0 0.5rem;
+  opacity: 0.85;
 }
 .panel-max {
   font-size: 0.8rem;

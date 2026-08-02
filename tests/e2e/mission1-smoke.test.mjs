@@ -204,6 +204,33 @@ test('przycisk Pauza zatrzymuje upływ czasu, Wznów wznawia', async () => {
   await page.close();
 });
 
+test('rozkaz marszu rysuje na mapie trasę (linia + kropka celu) do zleconego heksu', async () => {
+  const { page, consoleErrors } = await openPage({ width: 1280, height: 800 });
+  await dismissBriefing(page);
+
+  const krakowLabel = page.locator('text=Kraków').first();
+  const box = await krakowLabel.boundingBox();
+  await page.mouse.click(box.x + box.width / 2, box.y + 15);
+  await page.waitForTimeout(150);
+
+  const infantryRow = page.locator('#side-panel .panel-row', { hasText: 'Piechota' });
+  await infantryRow.locator('button', { hasText: 'Armia' }).click();
+  await page.waitForTimeout(150);
+  await page.click('#side-panel .panel-close');
+  await page.waitForTimeout(100);
+
+  await page.mouse.click(box.x + box.width / 2, box.y + 15); // zaznacz armię stojącą na Krakowie
+  await page.waitForTimeout(150);
+  await page.mouse.click(box.x + box.width / 2 + 60, box.y + 60); // zleć marsz gdzie indziej
+  await page.waitForTimeout(200);
+
+  assert.equal(await page.locator('.army-path-line').count(), 1, 'zlecona armia powinna mieć narysowaną linię trasy');
+  assert.equal(await page.locator('.army-path-dest').count(), 1, 'trasa powinna mieć oznaczony punkt docelowy');
+
+  assert.deepEqual(consoleErrors, []);
+  await page.close();
+});
+
 test('przyciski mają rozsądny rozmiar celu dotykowego na widoku mobilnym (>=32px wysokości)', async () => {
   const { page, consoleErrors } = await openPage({ width: 390, height: 844 });
 
