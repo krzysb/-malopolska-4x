@@ -139,6 +139,39 @@ test('desktop: kliknięcie miasta gracza otwiera panel z budynkami i rekrutacją
   await page.close();
 });
 
+test('powolny (ludzki) klik przycisku Buduj/Rekrutuj rejestruje się mimo pętli symulacji w tle', async () => {
+  // Regresja: panel boczny był kiedyś przebudowywany (innerHTML='') przy
+  // każdej klatce pętli symulacji (~15x/sek). Realny klik trzymany >50ms
+  // regularnie łapał moment podmiany przycisku pod kursorem - "click" nigdy
+  // nie docierał do żywego uchwytu, bez żadnego błędu w konsoli. main.js
+  // teraz przebudowuje panel tylko przy zmianie wyboru/akcji gracza, nie co
+  // klatkę - ten test trzyma mousedown przez 150ms (dłużej niż throttle
+  // odświeżania mapy) i sprawdza, że mimo to klik faktycznie coś zmienia.
+  const { page, consoleErrors } = await openPage({ width: 1280, height: 800 });
+  await dismissBriefing(page);
+
+  const krakowLabel = page.locator('text=Kraków').first();
+  const box = await krakowLabel.boundingBox();
+  await page.mouse.click(box.x + box.width / 2, box.y + 15);
+  await page.waitForTimeout(300); // symulacja tyka w tle, jak podczas realnego czytania panelu
+
+  const infantryRow = page.locator('#side-panel .panel-row', { hasText: 'Piechota' });
+  const garrisonBtn = infantryRow.locator('button', { hasText: 'Garnizon' });
+  const goldBefore = await page.locator('#hud-gold').textContent();
+
+  const btnBox = await garrisonBtn.boundingBox();
+  await page.mouse.move(btnBox.x + btnBox.width / 2, btnBox.y + btnBox.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(150); // dłużej niż jedna klatka odświeżania panelu
+  await page.mouse.up();
+  await page.waitForTimeout(200);
+
+  const goldAfter = await page.locator('#hud-gold').textContent();
+  assert.notEqual(goldBefore, goldAfter, 'powolny klik powinien zarejestrować rekrutację (złoto powinno się zmienić)');
+  assert.deepEqual(consoleErrors, []);
+  await page.close();
+});
+
 test('symulacja czasu rzeczywistego płynie sama (czas i złoto rosną bez klikania)', async () => {
   const { page, consoleErrors } = await openPage({ width: 1280, height: 800 });
   await dismissBriefing(page);

@@ -45,6 +45,18 @@ let selectedCityId = null;
 let paused = false;
 let speedMultiplier = 1;
 
+// Panel boczny (miasto/armia) NIE jest przebudowywany przy każdej klatce pętli
+// symulacji - robiłby to ~15x/sek i realny, ludzki klik (mousedown->mouseup
+// trwa zwykle >50ms) regularnie łapałby moment, w którym przycisk pod
+// kursorem właśnie został podmieniony na nowy element (innerHTML=''), więc
+// zdarzenie click nigdy by nie dotarło do żywego uchwytu - klik "nic nie robi"
+// bez żadnego błędu w konsoli. Panel odświeża się tylko przy zmianie wyboru
+// (natychmiast) i rzadko okresowo (PANEL_REFRESH_INTERVAL_SEC), żeby pokazać
+// narastające złoto/odblokowane budynki bez ryzykowania przerwania kliknięcia.
+const PANEL_REFRESH_INTERVAL_SEC = 1;
+let lastPanelSelectionKey = undefined;
+let timeSincePanelRefresh = 0;
+
 const renderer = createHexRenderer(svg, { onHexClick: handleHexClick });
 renderer.buildBoard(state);
 render();
@@ -56,13 +68,19 @@ if (state.time === 0 && state.log.length === 0) {
   briefing.hide();
 }
 
-function render() {
-  renderer.render(state);
-  hud.render(state);
-  eventLog.render(state);
-  endScreen.render(state);
-  pauseBtn.disabled = state.status !== 'playing';
-  speedBtn.disabled = state.status !== 'playing';
+function currentSelectionKey() {
+  if (selectedArmyId) return `army:${selectedArmyId}`;
+  if (selectedCityId) return `city:${selectedCityId}`;
+  return null;
+}
+
+function renderPanel({ force = false } = {}) {
+  const selectionKey = currentSelectionKey();
+  const selectionChanged = selectionKey !== lastPanelSelectionKey;
+  if (!force && !selectionChanged && timeSincePanelRefresh < PANEL_REFRESH_INTERVAL_SEC) return;
+
+  lastPanelSelectionKey = selectionKey;
+  timeSincePanelRefresh = 0;
 
   if (selectedArmyId && state.armies[selectedArmyId]) {
     const army = state.armies[selectedArmyId];
@@ -75,6 +93,16 @@ function render() {
   } else {
     closePanels();
   }
+}
+
+function render() {
+  renderer.render(state);
+  hud.render(state);
+  eventLog.render(state);
+  endScreen.render(state);
+  pauseBtn.disabled = state.status !== 'playing';
+  speedBtn.disabled = state.status !== 'playing';
+  renderPanel();
 }
 
 function closePanels() {
@@ -107,6 +135,7 @@ function handleHexClick(q, r) {
       if (path && path.length > 0) state = setArmyPath(state, selectedArmyId, path);
     }
     render();
+    renderPanel({ force: true }); // rozkaz to świadome działanie gracza - odśwież panel natychmiast
     return;
   }
 
@@ -134,12 +163,14 @@ function onBuild(buildingId) {
   if (!selectedCityId) return;
   state = buildBuilding(state, selectedCityId, buildingId);
   render();
+  renderPanel({ force: true }); // pokaż nowy poziom budynku/złoto natychmiast, nie za sekundę
 }
 
 function onRecruit(unitTypeId, destination) {
   if (!selectedCityId) return;
   state = recruitUnit(state, selectedCityId, unitTypeId, destination);
   render();
+  renderPanel({ force: true });
 }
 
 function startNewGame() {
@@ -180,6 +211,7 @@ function loop(timestamp) {
     const dt = Math.min(rawDt, MAX_DT_SEC) * speedMultiplier;
     if (dt > 0) {
       state = tick(state, dt);
+      timeSincePanelRefresh += dt;
 
       timeSinceAutosave += dt;
       if (timeSinceAutosave >= AUTOSAVE_INTERVAL_SEC) {
