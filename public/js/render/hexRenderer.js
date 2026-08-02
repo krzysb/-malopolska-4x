@@ -4,11 +4,38 @@
 // hexPoints + buildBoard raz, potem tylko aktualizacja klas/atrybutów), dostosowany
 // do danych stanu 4X (teren + miasta + armie zamiast dwugraczowej planszy).
 import { axialToPixel, hexPolygonPoints, parseKey } from '../engine/hexgrid.js';
-import { SHIELD_PATH, CITY_CHARGES, chargeShapes } from './heraldry.js';
 import { UNIT_TYPES } from '../data/unitTypes.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 export const HEX_SIZE = 10;
+
+// Kafle terenu wycięte z arkusza referencyjnego użytkownika (zob.
+// assets-source/) - izometryczne "diamenty", niekoniecznie tego samego
+// kształtu co nasz heks. `preserveAspectRatio="xMidYMid slice"` na <image>
+// (patrz buildBoard) kadruje je jak CSS `background-size:cover`, więc różne
+// proporcje źródeł nie wymagają osobnego strojenia.
+const TERRAIN_IMAGES = {
+  plains: 'assets/terrain/plains.png',
+  forest: 'assets/terrain/forest.png',
+  hills: 'assets/terrain/hills.png',
+  river: 'assets/terrain/river.png',
+  impassable: 'assets/terrain/impassable.png',
+};
+
+// Ilustracja miasta: stolica dostaje unikalny Zamek Królewski, pozostałe
+// miasta cyklicznie dzielą 3 warianty (arkusz użytkownika miał ich tyle) -
+// różnicowane dodatkowo kolorową "podstawą" właściciela (patrz renderCities).
+const CAPITAL_CITY_IMAGE = 'assets/cities/zamek-krolewski.png';
+const CITY_IMAGES = ['assets/cities/miasto-fortyfikowane.png', 'assets/cities/osada-targowa.png', 'assets/cities/mur-obronny.png'];
+
+// Wariant grafiki zależy od id miasta (nie kolejności renderowania - ta
+// zmienia się wraz z sortowaniem po głębi, patrz renderCities), więc
+// przypisanie jest stabilne między klatkami.
+function cityImageFor(city) {
+  if (city.capital) return CAPITAL_CITY_IMAGE;
+  const hash = [...city.id].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  return CITY_IMAGES[hash % CITY_IMAGES.length];
+}
 
 // Kształt markera armii zależy od dominującego (najliczniejszego) typu jednostek
 // w stosie - proste wektorowe rozróżnienie (kwadrat/trójkąt/romb/sześciokąt)
@@ -47,12 +74,20 @@ function pointsAttr(x, y) {
 
 // svg - element <svg> w DOM. onHexClick(q, r) - opcjonalny handler kliknięcia w heks.
 export function createHexRenderer(svg, { onHexClick } = {}) {
+  const defs = svgEl('defs');
+  const hexClip = svgEl('clipPath', { id: 'hex-clip' });
+  defs.appendChild(hexClip);
   const terrainLayer = svgEl('g', { class: 'layer-terrain' });
+  const terrainImageLayer = svgEl('g', { class: 'layer-terrain-images' });
   const highlightLayer = svgEl('g', { class: 'layer-highlight' });
   const pathsLayer = svgEl('g', { class: 'layer-paths' });
   const citiesLayer = svgEl('g', { class: 'layer-cities' });
   const armiesLayer = svgEl('g', { class: 'layer-armies' });
-  svg.append(terrainLayer, highlightLayer, pathsLayer, citiesLayer, armiesLayer);
+  // Kolejność: obrazy terenu na spodzie, potem terrainLayer (bez wypełnienia,
+  // tylko obrys siatki + obsługa kliknięć) na wierzchu, żeby linie heksów
+  // zawsze były widoczne NAD grafiką (inaczej nieprzezroczysty kafel
+  // całkowicie zakrywałby obrys pod spodem).
+  svg.append(defs, terrainImageLayer, terrainLayer, highlightLayer, pathsLayer, citiesLayer, armiesLayer);
 
   const hexPositions = new Map(); // "q,r" -> {x, y}
   const cityGroups = new Map(); // cityId -> <g>
@@ -61,7 +96,14 @@ export function createHexRenderer(svg, { onHexClick } = {}) {
 
   function buildBoard(state) {
     terrainLayer.innerHTML = '';
+    terrainImageLayer.innerHTML = '';
     hexPositions.clear();
+
+    // clipPath ze wspólnym kształtem heksa wyśrodkowanym w (0,0) - każdy kafel
+    // terenu to <g transform="translate(x,y)"> z tym samym clip-path, więc nie
+    // trzeba liczyć osobnego poligonu przycinającego dla każdego heksu.
+    hexClip.innerHTML = '';
+    hexClip.appendChild(svgEl('polygon', { points: pointsAttr(0, 0) }));
 
     const pixels = Object.entries(state.map.hexes).map(([k, hex]) => {
       const { q, r } = parseKey(k);
@@ -78,7 +120,25 @@ export function createHexRenderer(svg, { onHexClick } = {}) {
     const maxY = Math.max(...ys) + pad;
     svg.setAttribute('viewBox', `${minX} ${minY} ${maxX - minX} ${maxY - minY}`);
 
+    // Kafel obrazu jest celowo większy niż sam heks (i wycentrowany na nim) -
+    // preserveAspectRatio="xMidYMid slice" kadruje go jak CSS background-size:
+    // cover, więc nadmiar i tak zostanie przycięty przez clip-path, ale
+    // zapewnia to pełne pokrycie heksa niezależnie od proporcji źródłowego pliku.
+    const tileSize = HEX_SIZE * 2.4;
     for (const p of pixels) {
+      const tile = svgEl('g', { transform: `translate(${p.x},${p.y})`, 'clip-path': 'url(#hex-clip)' });
+      tile.appendChild(
+        svgEl('image', {
+          href: TERRAIN_IMAGES[p.hex.terrain] ?? TERRAIN_IMAGES.plains,
+          x: -tileSize / 2,
+          y: -tileSize / 2,
+          width: tileSize,
+          height: tileSize,
+          preserveAspectRatio: 'xMidYMid slice',
+        }),
+      );
+      terrainImageLayer.appendChild(tile);
+
       const poly = svgEl('polygon', {
         points: pointsAttr(p.x, p.y),
         class: `hex-cell terrain-${p.hex.terrain}`,
@@ -95,7 +155,12 @@ export function createHexRenderer(svg, { onHexClick } = {}) {
 
   function renderCities(state) {
     const seen = new Set();
-    for (const city of Object.values(state.cities)) {
+    // Ilustracje budynków są wyższe niż jeden heks i mogą zachodzić na
+    // sąsiadów - sortowanie po `r` (wiersz, południe=dalej) zapewnia, że
+    // miasto "bliżej widza" rysuje się NAD tym, które stoi za nim, zamiast
+    // w nieprzewidywalnej kolejności obiektu stanu.
+    const citiesSorted = Object.values(state.cities).sort((a, b) => a.r - b.r);
+    for (const city of citiesSorted) {
       seen.add(city.id);
       const pos = hexPositions.get(`${city.q},${city.r}`);
       if (!pos) continue;
@@ -103,18 +168,33 @@ export function createHexRenderer(svg, { onHexClick } = {}) {
       let group = cityGroups.get(city.id);
       if (!group) {
         group = svgEl('g');
-        const scale = (HEX_SIZE * 0.55) / 5.5; // dopasuj bazowy rozmiar tarczy (jednostki -5.5..6.5) do promienia markera
-        const crestGroup = svgEl('g', { class: 'crest', transform: `scale(${scale})` });
-        crestGroup.appendChild(svgEl('path', { class: 'crest-shield', d: SHIELD_PATH }));
-        for (const { tag, class: shapeClass, attrs } of chargeShapes(CITY_CHARGES[city.id])) {
-          crestGroup.appendChild(svgEl(tag, { ...attrs, class: shapeClass }));
-        }
-        group.append(crestGroup, svgEl('text', { class: 'city-label' }));
-        citiesLayer.appendChild(group);
+        // Kolorowa "podstawa" pod budynkiem niesie właściciela (grafika
+        // budynku sama w sobie nie ma koloru frakcji) - elipsa zamiast koła,
+        // żeby pasowała do izometrycznej perspektywy kafli terenu.
+        const base = svgEl('ellipse', { class: 'city-base', rx: HEX_SIZE * 0.6, ry: HEX_SIZE * 0.32 });
+        // Budynek renderowany szerzej/wyżej niż sam heks (jak na ilustracji
+        // referencyjnej, gdzie zabudowa wyraźnie "wystaje" ponad kafel) i
+        // zakotwiczony u dołu na środku heksa. Celowo nie za duży - sąsiednie
+        // miasta na tej mapie potrafią stać na hexach odległych o 1.
+        const bw = HEX_SIZE * 1.7;
+        const bh = HEX_SIZE * 1.5;
+        const img = svgEl('image', {
+          class: 'city-building',
+          x: -bw / 2,
+          y: -bh + HEX_SIZE * 0.4,
+          width: bw,
+          height: bh,
+          preserveAspectRatio: 'xMidYMid meet',
+        });
+        group.append(base, img, svgEl('text', { class: 'city-label' }));
         cityGroups.set(city.id, group);
+      } else {
+        group.remove(); // odczep i dołóż na koniec, żeby zachować porządek sortowania po r
       }
+      citiesLayer.appendChild(group);
       group.setAttribute('transform', `translate(${pos.x},${pos.y})`);
       group.setAttribute('class', `city-marker owner-${city.owner}${city.capital ? ' capital' : ''}`);
+      group.querySelector('.city-building').setAttribute('href', cityImageFor(city));
       group.querySelector('.city-label').textContent = city.name;
     }
     for (const [id, group] of cityGroups) {
