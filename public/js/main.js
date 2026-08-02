@@ -27,6 +27,9 @@ const sidePanel = document.getElementById('side-panel');
 const pauseBtn = document.getElementById('pause-btn');
 const speedBtn = document.getElementById('speed-btn');
 const newGameBtn = document.getElementById('new-game-btn');
+const orderHint = document.getElementById('order-hint');
+const orderHintText = document.getElementById('order-hint-text');
+const orderCancelBtn = document.getElementById('order-cancel-btn');
 
 const hud = createHud({
   turnEl: document.getElementById('hud-turn'),
@@ -95,6 +98,21 @@ function renderPanel({ force = false } = {}) {
   }
 }
 
+// Baner nad mapą pokazujący, że armia jest zaznaczona i kolejny klik na mapie
+// wyda jej rozkaz - widoczny niezależnie od panelu bocznego (na mobile jest
+// on osobnym bottom-sheetem, łatwym do przeoczenia), z zawsze dostępnym
+// przyciskiem anulowania.
+function renderOrderHint() {
+  const army = selectedArmyId ? state.armies[selectedArmyId] : null;
+  renderer.setOrderMode(Boolean(army) && army.owner === 'player');
+  if (!army || army.owner !== 'player') {
+    orderHint.hidden = true;
+    return;
+  }
+  orderHint.hidden = false;
+  orderHintText.textContent = 'Armia zaznaczona - kliknij heks docelowy, aby ruszyć/zaatakować.';
+}
+
 function render() {
   renderer.render(state);
   hud.render(state);
@@ -103,6 +121,7 @@ function render() {
   pauseBtn.disabled = state.status !== 'playing';
   speedBtn.disabled = state.status !== 'playing';
   renderPanel();
+  renderOrderHint();
 }
 
 function closePanels() {
@@ -130,12 +149,29 @@ function handleHexClick(q, r) {
 
   if (selectedArmyId) {
     const army = state.armies[selectedArmyId];
-    if (army) {
-      const path = findPath(state.map.hexes, { q: army.q, r: army.r }, { q, r });
-      if (path && path.length > 0) state = setArmyPath(state, selectedArmyId, path);
+    if (!army) {
+      closePanels();
+      render();
+      return;
     }
-    render();
-    renderPanel({ force: true }); // rozkaz to świadome działanie gracza - odśwież panel natychmiast
+    // Klik na heks, na którym armia już stoi = anuluj wybór (nie próbuj
+    // wydawać rozkazu "ruszu na miejscu" - to było ciche no-op bez feedbacku).
+    if (army.q === q && army.r === r) {
+      closePanels();
+      render();
+      return;
+    }
+    const path = findPath(state.map.hexes, { q: army.q, r: army.r }, { q, r });
+    if (path && path.length > 0) {
+      state = setArmyPath(state, selectedArmyId, path);
+      render();
+      renderPanel({ force: true }); // rozkaz to świadome działanie gracza - odśwież panel natychmiast
+    } else {
+      // Cel nieosiągalny (np. przez nieprzejezdny teren) - armia zostaje
+      // zaznaczona, żeby dało się od razu spróbować innego heksu, ale gracz
+      // dostaje widoczny sygnał, że TEN klik nic nie zrobił.
+      renderer.flashInvalidHex(q, r);
+    }
     return;
   }
 
@@ -195,6 +231,11 @@ pauseBtn.addEventListener('click', () => {
 speedBtn.addEventListener('click', () => {
   speedMultiplier = speedMultiplier === 1 ? 2 : 1;
   speedBtn.textContent = `${speedMultiplier}×`;
+});
+
+orderCancelBtn.addEventListener('click', () => {
+  closePanels();
+  render();
 });
 
 // Pętla symulacji czasu rzeczywistego: dt liczony z realnego upływu czasu

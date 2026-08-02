@@ -6,16 +6,12 @@ import { BUILDINGS, BUILDING_IDS } from '../data/buildings.js';
 import { UNIT_TYPES } from '../data/unitTypes.js';
 import { buildingLevel, nextBuildingCost, canBuild } from '../engine/cities.js';
 import { recruitCost } from '../engine/units.js';
+import { iconEl, BUILDING_ICONS, UNIT_ICONS, renderUnitChips } from './icons.js';
 
 const RECRUITABLE_UNIT_IDS = ['infantry', 'archers', 'cavalry'];
 
 function ownerLabel(owner) {
   return owner === 'player' ? 'Ty' : owner === 'tatar' ? 'Tatarzy' : 'Neutralne';
-}
-
-function describeUnits(units) {
-  if (units.length === 0) return 'brak';
-  return units.map((u) => `${UNIT_TYPES[u.type].name} ×${u.count}`).join(', ');
 }
 
 export function createCityPanel(container, { onBuild, onRecruit, onClose }) {
@@ -34,7 +30,9 @@ export function createCityPanel(container, { onBuild, onRecruit, onClose }) {
       const row = document.createElement('div');
       row.className = 'panel-row';
       const label = document.createElement('span');
-      label.textContent = `${def.name} (poz. ${level}/${def.maxLevel})`;
+      label.className = 'panel-row-label';
+      label.appendChild(iconEl(BUILDING_ICONS[id]));
+      label.appendChild(document.createTextNode(`${def.name} (poz. ${level}/${def.maxLevel})`));
       row.appendChild(label);
 
       if (cost !== null) {
@@ -74,7 +72,9 @@ export function createCityPanel(container, { onBuild, onRecruit, onClose }) {
       const row = document.createElement('div');
       row.className = 'panel-row';
       const label = document.createElement('span');
-      label.textContent = `${def.name} (${cost}z)`;
+      label.className = 'panel-row-label';
+      label.appendChild(iconEl(UNIT_ICONS[id]));
+      label.appendChild(document.createTextNode(`${def.name} (${cost}z)`));
       row.appendChild(label);
 
       const garrisonBtn = document.createElement('button');
@@ -106,9 +106,14 @@ export function createCityPanel(container, { onBuild, onRecruit, onClose }) {
     info.textContent = `Właściciel: ${ownerLabel(city.owner)} · Poziom ${city.level}`;
     container.appendChild(info);
 
-    const garrison = document.createElement('p');
-    garrison.textContent = `Garnizon: ${describeUnits(city.garrison)}`;
-    container.appendChild(garrison);
+    const garrisonLabel = document.createElement('p');
+    garrisonLabel.className = 'panel-subheading';
+    garrisonLabel.textContent = 'Garnizon:';
+    container.appendChild(garrisonLabel);
+    const garrisonChips = document.createElement('div');
+    garrisonChips.className = 'unit-chips';
+    renderUnitChips(garrisonChips, city.garrison, UNIT_TYPES);
+    container.appendChild(garrisonChips);
 
     if (city.owner === 'player') {
       container.appendChild(renderBuildings(city, gold));

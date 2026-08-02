@@ -209,11 +209,30 @@ export function createHexRenderer(svg, { onHexClick } = {}) {
     }
   }
 
+  // Włącza/wyłącza wizualny "tryb rozkazu" (armia zaznaczona, kolejny klik na
+  // mapie ją wyśle) - zmienia kursor nad heksami, żeby stan był widoczny na
+  // samej mapie, a nie tylko w tekście panelu bocznego (który na mobile jest
+  // pod scrollem jako bottom-sheet).
+  function setOrderMode(active) {
+    svg.classList.toggle('order-mode', Boolean(active));
+  }
+
+  // Krótki, samo-znikający czerwony "pulse" na heksie, do którego kliknięcie
+  // nie wydało rozkazu (cel nieosiągalny/brak ścieżki) - bez tego klik po
+  // prostu "nic nie robił", co sprawiało wrażenie zepsutego sterowania.
+  function flashInvalidHex(q, r) {
+    const pos = hexPositions.get(`${q},${r}`);
+    if (!pos) return;
+    const poly = svgEl('polygon', { points: pointsAttr(pos.x, pos.y), class: 'hex-invalid' });
+    highlightLayer.appendChild(poly);
+    setTimeout(() => poly.remove(), 450);
+  }
+
   function render(state) {
     renderCities(state);
     renderPaths(state);
     renderArmies(state);
   }
 
-  return { buildBoard, render, setHighlight };
+  return { buildBoard, render, setHighlight, setOrderMode, flashInvalidHex };
 }

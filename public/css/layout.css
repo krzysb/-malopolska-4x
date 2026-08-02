@@ -13,9 +13,6 @@ html, body {
   flex-wrap: wrap;
   align-items: center;
   row-gap: 0.4rem;
-}
-
-#end-turn-btn {
   margin-left: auto;
 }
 

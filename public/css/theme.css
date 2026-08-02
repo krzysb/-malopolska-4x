@@ -1,18 +1,20 @@
-/* Paleta historyczno-militarna (pergamin/brąz/złoto/czerwień zagrożenia).
-   Pełny szlif wizualny to osobny etap (polish) - to jest baza pod dalszą pracę. */
+/* Paleta historyczno-militarna (pergamin/brąz/złoto/czerwień zagrożenia). */
 :root {
   --color-bg: #efe4c8;
   --color-bg-panel: #f7efd9;
   --color-text: #3a2c1a;
   --color-accent: #8a6a1f;
+  --color-accent-bright: #b6892a;
   --color-danger: #7a1f1f;
   --color-border: #c9b183;
+  --color-wood: #4a3420;
+  --color-wood-dark: #34240f;
 
-  --terrain-plains: #d9c98f;
-  --terrain-forest: #4c6b3f;
-  --terrain-hills: #a68a5c;
-  --terrain-river: #4a7fa5;
-  --terrain-impassable: #5b5245;
+  --terrain-plains: #d3c67f;
+  --terrain-forest: #3f6338;
+  --terrain-hills: #a1885a;
+  --terrain-river: #3f7ba3;
+  --terrain-impassable: #574d3f;
 
   --owner-player: #1f5aa8;
   --owner-neutral: #7a7566;
@@ -25,8 +27,11 @@
     --color-bg-panel: #2a2118;
     --color-text: #ece0c4;
     --color-accent: #d1a94a;
+    --color-accent-bright: #e6c063;
     --color-danger: #c94a4a;
     --color-border: #4a3d29;
+    --color-wood: #241a10;
+    --color-wood-dark: #150e08;
 
     --terrain-plains: #7a6a3f;
     --terrain-forest: #2e4527;
@@ -49,33 +54,96 @@ body {
   color: var(--color-text);
 }
 
+.icon {
+  width: 1em;
+  height: 1em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: -0.15em;
+  flex-shrink: 0;
+}
+
 #hud {
-  padding: 0.75rem 1rem;
-  background: var(--color-bg-panel);
-  border-bottom: 2px solid var(--color-border);
+  padding: 0.6rem 1rem;
+  background: linear-gradient(180deg, var(--color-wood) 0%, var(--color-wood-dark) 100%);
+  border-bottom: 3px solid var(--color-accent);
+  color: var(--color-bg-panel);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+
+.hud-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
 }
 
 #hud h1 {
-  margin: 0 0 0.25rem;
-  font-size: 1.1rem;
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--color-accent-bright);
+  letter-spacing: 0.02em;
+}
+
+.hud-subtitle {
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.75;
+  font-style: italic;
 }
 
 #hud-stats {
   display: flex;
   gap: 1rem;
   font-size: 0.95rem;
-  color: var(--color-accent);
+  color: var(--color-accent-bright);
+}
+
+.hud-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+#order-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.4rem 1rem;
+  background: var(--color-accent);
+  color: var(--color-bg-panel);
+  font-size: 0.85rem;
+}
+#order-hint[hidden] { display: none; }
+#order-hint-text { font-weight: bold; }
+#order-cancel-btn {
+  background: var(--color-bg-panel);
+  color: var(--color-text);
+  flex-shrink: 0;
 }
 
 .hex-cell {
   stroke: var(--color-border);
   stroke-width: 0.5;
+  cursor: pointer;
 }
 .hex-cell.terrain-plains { fill: var(--terrain-plains); }
 .hex-cell.terrain-forest { fill: var(--terrain-forest); }
 .hex-cell.terrain-hills { fill: var(--terrain-hills); }
 .hex-cell.terrain-river { fill: var(--terrain-river); }
-.hex-cell.terrain-impassable { fill: var(--terrain-impassable); }
+.hex-cell.terrain-impassable { fill: var(--terrain-impassable); cursor: default; }
+
+/* Tryb "wydawania rozkazu" (armia zaznaczona) - kursor od razu sygnalizuje,
+   że kolejny klik na mapie jest rozkazem, nie zwykłym oglądaniem. */
+#hex-map.order-mode .hex-cell {
+  cursor: crosshair;
+}
 
 /* Znaczniki miast/armii i podświetlenie leżą nad heksami terenu, ale nie mogą
    przechwytywać kliknięć - obsługa kliknięcia siedzi wyłącznie na polygonach
@@ -83,12 +151,29 @@ body {
 .layer-cities, .layer-armies, .layer-highlight, .layer-paths {
   pointer-events: none;
 }
+.layer-cities, .layer-armies {
+  filter: drop-shadow(0 0.6px 1.2px rgba(0, 0, 0, 0.55));
+}
 
 .hex-highlight {
   fill: rgba(255, 220, 120, 0.35);
   stroke: var(--color-accent);
   stroke-width: 1;
   pointer-events: none;
+}
+
+/* Krótki czerwony "pulse" na heksie, do którego kliknięcie nie wydało
+   rozkazu (nieosiągalny cel) - widoczny feedback zamiast cichego no-opa. */
+.hex-invalid {
+  fill: rgba(200, 40, 40, 0.45);
+  stroke: var(--color-danger);
+  stroke-width: 1.2;
+  pointer-events: none;
+  animation: hex-invalid-fade 0.45s ease-out forwards;
+}
+@keyframes hex-invalid-fade {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 .crest-shield {
@@ -154,29 +239,42 @@ body {
 button {
   font-family: inherit;
   font-size: 0.85rem;
-  background: var(--color-accent);
-  color: var(--color-bg-panel);
-  border: 1px solid var(--color-border);
-  border-radius: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: linear-gradient(180deg, var(--color-accent-bright) 0%, var(--color-accent) 100%);
+  color: var(--color-wood-dark);
+  font-weight: bold;
+  border: 1px solid var(--color-wood);
+  border-radius: 0.3rem;
   padding: 0.3rem 0.6rem;
   cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+  box-shadow: none;
 }
 button:not(:disabled):hover {
-  filter: brightness(1.1);
+  filter: brightness(1.08);
+}
+button:not(:disabled):active {
+  transform: translateY(1px);
+  box-shadow: none;
 }
 
 #side-panel {
   background: var(--color-bg-panel);
   border: 1px solid var(--color-border);
-  border-radius: 0.4rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 #side-panel h2 {
   margin: 0 0 0.4rem;
-  font-size: 1.05rem;
+  padding-bottom: 0.4rem;
+  font-size: 1.1rem;
+  border-bottom: 2px solid var(--color-accent);
 }
 #side-panel h3 {
   margin: 0 0 0.3rem;
@@ -196,6 +294,38 @@ button:not(:disabled):hover {
   font-size: 0.78rem;
   margin: 0 0 0.5rem;
   opacity: 0.85;
+}
+.panel-subheading {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: var(--color-accent);
+  margin: 0.5rem 0 0.2rem;
+}
+.panel-row-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.unit-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.3rem 0 0.6rem;
+}
+.unit-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.82rem;
+}
+.unit-chip-empty {
+  font-size: 0.85rem;
+  font-style: italic;
+  opacity: 0.7;
 }
 .panel-max {
   font-size: 0.8rem;

@@ -4,10 +4,7 @@
 import { UNIT_TYPES } from '../data/unitTypes.js';
 import { armyMovementPoints } from '../engine/units.js';
 import { totalUnitCount } from '../engine/combat.js';
-
-function describeUnits(units) {
-  return units.map((u) => `${UNIT_TYPES[u.type].name} ×${u.count}`).join(', ');
-}
+import { renderUnitChips, iconEl } from './icons.js';
 
 export function createArmyPanel(container, { onCancel }) {
   function render(army) {
@@ -18,8 +15,9 @@ export function createArmyPanel(container, { onCancel }) {
     title.textContent = army.owner === 'player' ? 'Twoja armia' : 'Armia tatarska';
     container.appendChild(title);
 
-    const units = document.createElement('p');
-    units.textContent = describeUnits(army.units);
+    const units = document.createElement('div');
+    units.className = 'unit-chips';
+    renderUnitChips(units, army.units, UNIT_TYPES);
     container.appendChild(units);
 
     const status = document.createElement('p');
@@ -40,7 +38,8 @@ export function createArmyPanel(container, { onCancel }) {
 
       const cancelBtn = document.createElement('button');
       cancelBtn.className = 'panel-close';
-      cancelBtn.textContent = 'Zamknij';
+      cancelBtn.appendChild(iconEl('cancel'));
+      cancelBtn.appendChild(document.createTextNode('Anuluj wybór'));
       cancelBtn.addEventListener('click', onCancel);
       container.appendChild(cancelBtn);
     }
