@@ -218,10 +218,18 @@ function loop(timestamp) {
         saveGame(state);
         timeSinceAutosave = 0;
       }
-      if (state.status !== 'playing') saveGame(state); // zachowaj końcowy wynik natychmiast
+      // Ta klatka to JEDYNA okazja na render tuż po zakończeniu gry - warunek
+      // pętli (state.status === 'playing') sprawdzany jest na WEJŚCIU, więc na
+      // kolejnej klatce, gdy status jest już 'victory'/'defeat', całe ciało
+      // pętli (w tym render()) w ogóle się nie wykona. Bez wymuszenia render()
+      // tutaj ekran końcowy potrafił nigdy się nie pokazać - throttle
+      // (RENDER_INTERVAL_SEC, ~15fps) rzadko trafiał dokładnie w tę klatkę,
+      // więc gra "zawieszała się" (przestawała reagować, bez żadnego komunikatu).
+      const justEnded = state.status !== 'playing';
+      if (justEnded) saveGame(state); // zachowaj końcowy wynik natychmiast
 
       timeSinceRender += dt;
-      if (timeSinceRender >= RENDER_INTERVAL_SEC) {
+      if (timeSinceRender >= RENDER_INTERVAL_SEC || justEnded) {
         render();
         timeSinceRender = 0;
       }

@@ -4,6 +4,9 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { createInitialState } from '../../public/js/engine/state.js';
+import { MAX_TIME_SEC } from '../../public/js/data/missionConfig.js';
+import { SAVE_KEY, SAVE_VERSION } from '../../public/js/engine/save.js';
 
 // Smoke-test end-to-end: uruchamia prawdziwy serwer i przeglądarkę (desktop +
 // mobile viewport), sprawdza że gra się ładuje bez błędów konsoli i że
@@ -199,6 +202,38 @@ test('przycisk Pauza zatrzymuje upływ czasu, Wznów wznawia', async () => {
   await page.waitForTimeout(1000);
   const timeAfterResume = await page.locator('#hud-turn').textContent();
   assert.notEqual(timeStillPaused, timeAfterResume, 'czas powinien znów płynąć po wznowieniu');
+
+  assert.deepEqual(consoleErrors, []);
+  await page.close();
+});
+
+test('ekran końcowy pojawia się natychmiast, gdy gra kończy się w trakcie (limit czasu), nie dopiero jak akurat wypadnie klatka odświeżania', async () => {
+  // Regresja: main.js renderuje panel/mapę z throttle'em ~15fps, a pętla
+  // symulacji w ogóle wchodzi w ciało tylko gdy state.status==='playing' NA
+  // WEJŚCIU do klatki. Bez wymuszenia render() w klatce, w której gra się
+  // kończy, ekran "Porażka"/"Zwycięstwo" potrafił nigdy się nie pokazać -
+  // throttle rzadko trafiał dokładnie w tę jedną klatkę, a każda kolejna
+  // klatka od razu pomijała całe ciało pętli (status już nie 'playing'), więc
+  // gra sprawiała wrażenie zawieszonej. Test wstrzykuje zapis tuż przed
+  // MAX_TIME_SEC (silnik przejdzie w defeat na pierwszym ticku po starcie),
+  // co deterministycznie odtwarza ten wyścig.
+  const state = createInitialState();
+  state.time = MAX_TIME_SEC - 0.02;
+  const payload = JSON.stringify({ version: SAVE_VERSION, savedAt: Date.now(), state });
+
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  const consoleErrors = [];
+  page.on('pageerror', (err) => consoleErrors.push(String(err)));
+  page.on('console', (msg) => {
+    if (msg.type() === 'error' && !msg.text().startsWith('Failed to load resource')) consoleErrors.push(msg.text());
+  });
+  await page.addInitScript(([key, value]) => localStorage.setItem(key, value), [SAVE_KEY, payload]);
+  await page.goto(BASE_URL, { waitUntil: 'load' });
+
+  await page.waitForTimeout(300); // kilka klatek rAF - dość, by pętla w ogóle ruszyła i zakończyła grę
+  const endScreenHidden = await page.locator('#end-screen').isHidden();
+  assert.equal(endScreenHidden, false, 'ekran końcowy powinien pojawić się od razu po zakończeniu gry');
+  assert.equal(await page.locator('#end-screen h2').textContent(), 'Porażka');
 
   assert.deepEqual(consoleErrors, []);
   await page.close();
