@@ -9,7 +9,7 @@ export const TIME_SCALE_SEC_PER_TURN = 8;
 
 export const TATAR_WAVES = [
   { id: 1, year: 1241, spawnTimeSec: 24, units: [{ type: 'tatar-raiders', count: 6 }, { type: 'tatar-horsearchers', count: 3 }] },
-  { id: 2, year: 1259, spawnTimeSec: 120, units: [{ type: 'tatar-raiders', count: 8 }, { type: 'tatar-horsearchers', count: 5 }] },
+  { id: 2, year: 1259, spawnTimeSec: 120, units: [{ type: 'tatar-raiders', count: 6 }, { type: 'tatar-horsearchers', count: 4 }] },
   { id: 3, year: 1287, spawnTimeSec: 216, units: [{ type: 'tatar-elite', count: 3 }, { type: 'tatar-horsearchers', count: 5 }, { type: 'tatar-raiders', count: 5 }] },
 ];
 

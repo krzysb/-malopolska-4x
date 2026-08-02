@@ -8,7 +8,10 @@ const STARTING_GOLD = 150;
 
 function defaultGarrisonFor(city) {
   if (city.capital) return [{ type: 'infantry', count: 3 }, { type: 'archers', count: 2 }];
-  if (city.owner === 'player') return [{ type: 'infantry', count: 2 }];
+  // Sandomierz (jedyne nie-stołeczne miasto gracza) leży najbliżej wschodniej
+  // granicy, skąd nadchodzą najazdy - silniejszy garnizon startowy niż dawniej
+  // (2 piechoty), żeby nie padał praktycznie za darmo pod pierwszą falą.
+  if (city.owner === 'player') return [{ type: 'infantry', count: 3 }];
   // Miasta neutralne startują ze słabym garnizonem - pierwszy podbój ma być
   // osiągalny dla niewielkiej, wczesnej armii, nie wymagać dużej inwestycji.
   return [{ type: 'infantry', count: 1 }];

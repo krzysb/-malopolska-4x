@@ -61,8 +61,13 @@ export const CITIES = [
 ];
 
 // Wschodnia krawędź mapy, skąd wkraczają najazdy tatarskie (patrz engine/ai.js).
+// Celowo pominięte pola bezpośrednio przy Sandomierzu (np. [11,0]/[11,1]/[11,2],
+// odległość 1 heksa) - w czasie rzeczywistym armia stamtąd docierałaby do miasta
+// w kilka sekund od spawnu, nie dając graczowi żadnej szansy na reakcję. Kolejne
+// wpisy rosną odległością od miast gracza (2/3/4 heksów od Sandomierza), więc
+// każda kolejna, silniejsza fala daje proporcjonalnie więcej czasu na przygotowanie.
 export const TATAR_SPAWN_OFFSETS = [
-  [11, 0], [11, 1], [11, 3], [11, 4], [11, 5], [10, 5],
+  [11, 3], [11, 4], [11, 5], [10, 5],
 ];
 
 function terrainAt(col, row, cityCoordSet) {
