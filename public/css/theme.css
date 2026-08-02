@@ -66,6 +66,16 @@ body {
   flex-shrink: 0;
 }
 
+/* Rastrowe ikony (assets/) - wygenerowane przez użytkownika, tło już usunięte
+   (patrz assets-source/ + wycinanie w historii commitów). */
+.icon-img {
+  width: 1.3em;
+  height: 1.3em;
+  object-fit: contain;
+  vertical-align: -0.3em;
+  flex-shrink: 0;
+}
+
 #hud {
   padding: 0.6rem 1rem;
   background: linear-gradient(180deg, var(--color-wood) 0%, var(--color-wood-dark) 100%);
@@ -295,6 +305,25 @@ button:not(:disabled):active {
   margin: 0 0 0.5rem;
   opacity: 0.85;
 }
+.building-entry {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  margin-bottom: 0.6rem;
+}
+.building-thumb {
+  width: 4.2rem;
+  height: auto;
+  border-radius: 0.4rem;
+  flex-shrink: 0;
+}
+.building-info {
+  flex: 1;
+  min-width: 0;
+}
+.building-info .panel-row {
+  padding-top: 0;
+}
 .panel-subheading {
   font-size: 0.85rem;
   font-weight: bold;
@@ -305,6 +334,16 @@ button:not(:disabled):active {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+}
+/* Grafiki jednostek (assets/units/) są szczegółowymi ilustracjami, nie
+   prostymi sylwetkami - przy standardowym rozmiarze ikony (.icon-img,
+   ~1.3em) robią się nieczytelną plamką. Tu, gdzie reprezentują konkretny
+   typ jednostki (a nie tylko dekorują tekst), potrzebują więcej miejsca. */
+.panel-row-label .icon-img,
+.unit-chip .icon-img {
+  width: 1.9em;
+  height: 1.9em;
+  vertical-align: -0.5em;
 }
 .unit-chips {
   display: flex;
@@ -319,7 +358,7 @@ button:not(:disabled):active {
   background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: 1rem;
-  padding: 0.15rem 0.55rem;
+  padding: 0.15rem 0.55rem 0.15rem 0.15rem;
   font-size: 0.82rem;
 }
 .unit-chip-empty {

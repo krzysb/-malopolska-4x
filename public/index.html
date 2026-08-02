@@ -13,19 +13,11 @@
        (render/icons.js) w panelach budowanych dynamicznie. -->
   <svg style="display:none" aria-hidden="true">
     <defs>
-      <symbol id="icon-gold" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></symbol>
-      <symbol id="icon-time" viewBox="0 0 24 24"><path d="M7 3h10M7 21h10M8 3c0 4.5 4 5.5 4 9s-4 4.5-4 9M16 3c0 4.5-4 5.5-4 9s4 4.5 4 9"/></symbol>
-      <symbol id="icon-army" viewBox="0 0 24 24"><path d="M12 2v16M8.5 5.5h7M10 21h4"/></symbol>
-      <symbol id="icon-infantry" viewBox="0 0 24 24"><path d="M12 3 19 6v6c0 5-4 8-7 9-3-1-7-4-7-9V6z"/></symbol>
-      <symbol id="icon-archers" viewBox="0 0 24 24"><path d="M7 3c4 4 4 14 0 18M7 12h13M17 9l3 3-3 3"/></symbol>
-      <symbol id="icon-cavalry" viewBox="0 0 24 24"><path d="M7 21c-.5-7 1-11 5-11s5.5 4 5 11M7 21h3M14 21h3"/></symbol>
+      <!-- Grafiki jednostek/budynków gracza mają teraz osobne PNG (assets/) -
+           te ikony liniowe zostają tylko jako fallback dla typów bez własnej
+           grafiki (jednostki tatarskie) i dla akcji UI (anuluj). -->
       <symbol id="icon-tatar-raiders" viewBox="0 0 24 24"><path d="M5 20c3-6 8-12 13-16M18 4l2 .8M18 4l-.8 2M6 19l-1 2 2-1"/></symbol>
       <symbol id="icon-tatar-elite" viewBox="0 0 24 24"><path d="M4 18h16l-1-8-4 4-3-6-3 6-4-4z"/></symbol>
-      <symbol id="icon-wall" viewBox="0 0 24 24"><path d="M4 21V11h3V9h2v2h2V9h2v2h2V9h2v2h3v10z"/></symbol>
-      <symbol id="icon-barracks" viewBox="0 0 24 24"><path d="M12 4l8 17H4zM12 4v17M8 21l4-10 4 10"/></symbol>
-      <symbol id="icon-market" viewBox="0 0 24 24"><path d="M4 9l2-5h12l2 5M4 9h16M4 9v12h16V9M9 21v-6h6v6"/></symbol>
-      <symbol id="icon-granary" viewBox="0 0 24 24"><path d="M12 21V9M12 9c-2-1-3-3-3-6 2 1 3 3 3 6zM12 9c2-1 3-3 3-6-2 1-3 3-3 6zM12 14c-2-1-3-3-3-6 2 1 3 3 3 6zM12 14c2-1 3-3 3-6-2 1-3 3-3 6z"/></symbol>
-      <symbol id="icon-church" viewBox="0 0 24 24"><path d="M12 3v18M6 9h12"/></symbol>
       <symbol id="icon-cancel" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5 5 19"/></symbol>
     </defs>
   </svg>
@@ -36,8 +28,8 @@
         <p class="hud-subtitle">Najazdy tatarskie</p>
       </div>
       <div id="hud-stats">
-        <span class="hud-stat"><svg class="icon"><use href="#icon-time"></use></svg><span id="hud-turn">Czas —</span></span>
-        <span class="hud-stat"><svg class="icon"><use href="#icon-gold"></use></svg><span id="hud-gold">Złoto —</span></span>
+        <span class="hud-stat"><img class="icon-img" src="assets/ui/hourglass.png" alt=""><span id="hud-turn">Czas —</span></span>
+        <span class="hud-stat"><img class="icon-img" src="assets/ui/gold.png" alt=""><span id="hud-gold">Złoto —</span></span>
         <span id="hud-status"></span>
         <button id="new-game-btn" title="Rozpocznij misję od nowa">Nowa gra</button>
         <button id="speed-btn" title="Przełącz prędkość symulacji">1×</button>

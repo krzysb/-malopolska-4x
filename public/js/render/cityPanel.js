@@ -6,7 +6,7 @@ import { BUILDINGS, BUILDING_IDS } from '../data/buildings.js';
 import { UNIT_TYPES } from '../data/unitTypes.js';
 import { buildingLevel, nextBuildingCost, canBuild } from '../engine/cities.js';
 import { recruitCost } from '../engine/units.js';
-import { iconEl, BUILDING_ICONS, UNIT_ICONS, renderUnitChips } from './icons.js';
+import { BUILDING_CARDS, renderUnitChips, unitIconEl } from './icons.js';
 
 const RECRUITABLE_UNIT_IDS = ['infantry', 'archers', 'cavalry'];
 
@@ -27,12 +27,22 @@ export function createCityPanel(container, { onBuild, onRecruit, onClose }) {
       const level = buildingLevel(city, id);
       const cost = nextBuildingCost(city, id);
 
+      const entry = document.createElement('div');
+      entry.className = 'building-entry';
+
+      const thumb = document.createElement('img');
+      thumb.className = 'building-thumb';
+      thumb.src = BUILDING_CARDS[id];
+      thumb.alt = def.name;
+      entry.appendChild(thumb);
+
+      const info = document.createElement('div');
+      info.className = 'building-info';
+
       const row = document.createElement('div');
       row.className = 'panel-row';
       const label = document.createElement('span');
-      label.className = 'panel-row-label';
-      label.appendChild(iconEl(BUILDING_ICONS[id]));
-      label.appendChild(document.createTextNode(`${def.name} (poz. ${level}/${def.maxLevel})`));
+      label.textContent = `Poziom ${level}/${def.maxLevel}`;
       row.appendChild(label);
 
       if (cost !== null) {
@@ -47,12 +57,15 @@ export function createCityPanel(container, { onBuild, onRecruit, onClose }) {
         max.textContent = 'maks.';
         row.appendChild(max);
       }
-      section.appendChild(row);
+      info.appendChild(row);
 
       const desc = document.createElement('p');
       desc.className = 'panel-hint panel-building-desc';
       desc.textContent = def.description;
-      section.appendChild(desc);
+      info.appendChild(desc);
+
+      entry.appendChild(info);
+      section.appendChild(entry);
     }
     return section;
   }
@@ -73,7 +86,7 @@ export function createCityPanel(container, { onBuild, onRecruit, onClose }) {
       row.className = 'panel-row';
       const label = document.createElement('span');
       label.className = 'panel-row-label';
-      label.appendChild(iconEl(UNIT_ICONS[id]));
+      label.appendChild(unitIconEl(id));
       label.appendChild(document.createTextNode(`${def.name} (${cost}z)`));
       row.appendChild(label);
 
